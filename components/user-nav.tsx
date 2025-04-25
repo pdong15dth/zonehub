@@ -1,6 +1,8 @@
 "use client"
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { useEffect, useState } from "react"
+import Link from "next/link"
+import { useSupabase } from "@/components/providers/supabase-provider"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -11,91 +13,132 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { LogOut, Settings, User, LogIn } from "lucide-react"
-import Link from "next/link"
-import { useSupabase } from "@/components/providers/supabase-provider"
-import { useRouter } from "next/navigation"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { User, LogOut, Settings, UserCircle, LayoutDashboard } from "lucide-react"
+import { getCurrentUserProfile } from "@/lib/auth-utils"
+import { UserProfile } from "@/types/auth"
 
 export function UserNav() {
-  const { user, supabase, loading } = useSupabase()
-  const router = useRouter()
+  const { supabase, user } = useSupabase()
+  const [profile, setProfile] = useState<UserProfile | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    const loadUserProfile = async () => {
+      if (!user) {
+        setIsLoading(false)
+        return
+      }
+
+      try {
+        const userProfile = await getCurrentUserProfile(supabase)
+        setProfile(userProfile)
+      } catch (error) {
+        console.error("Lỗi khi tải thông tin người dùng:", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadUserProfile()
+  }, [supabase, user])
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
-    router.refresh()
+    window.location.href = "/"
   }
 
-  if (loading) {
-    return (
-      <Button variant="ghost" size="icon" className="relative h-8 w-8 rounded-full">
-        <Avatar className="h-8 w-8">
-          <AvatarFallback>...</AvatarFallback>
-        </Avatar>
-      </Button>
-    )
-  }
-
+  // Nếu chưa đăng nhập, hiển thị nút đăng nhập/đăng ký
   if (!user) {
     return (
-      <Link href="/auth/signin">
-        <Button variant="default" size="sm" className="gap-2">
-          <LogIn className="h-4 w-4" />
-          Sign In
-        </Button>
-      </Link>
+      <div className="flex items-center gap-4">
+        <Link href="/auth/signin">
+          <Button variant="ghost" size="sm">
+            Đăng nhập
+          </Button>
+        </Link>
+        <Link href="/auth/signup">
+          <Button size="sm">Đăng ký</Button>
+        </Link>
+      </div>
     )
   }
 
-  // Get initials from email if no user name
-  const userEmail = user.email || ""
-  const userInitials = userEmail.substring(0, 2).toUpperCase()
+  // Tạo chữ cái đầu cho avatar
+  const getInitials = () => {
+    if (profile?.full_name) {
+      return profile.full_name
+        .split(' ')
+        .map(name => name[0])
+        .join('')
+        .toUpperCase()
+    }
+    
+    if (user.email) {
+      return user.email[0].toUpperCase()
+    }
+    
+    return "U"
+  }
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-          <Avatar className="h-8 w-8">
-            <AvatarImage src={user.user_metadata?.avatar_url || "/placeholder.svg"} alt={user.email || "User"} />
-            <AvatarFallback>{userInitials}</AvatarFallback>
-          </Avatar>
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-56" align="end" forceMount>
-        <DropdownMenuLabel className="font-normal">
-          <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">{user.user_metadata?.full_name || user.email}</p>
-            <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
-          </div>
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <DropdownMenuGroup>
-          <DropdownMenuItem asChild>
-            <Link href="/profile">
-              <User className="mr-2 h-4 w-4" />
-              <span>Profile</span>
-            </Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <Link href="/settings">
-              <Settings className="mr-2 h-4 w-4" />
-              <span>Settings</span>
-            </Link>
-          </DropdownMenuItem>
-          {user.user_metadata?.role === "admin" && (
+    <div className="flex items-center gap-4">
+      {/* Hiển thị nút Dashboard nếu là admin */}
+      {profile?.role === "admin" && (
+        <Link href="/admin/dashboard">
+          <Button variant="outline" size="sm" className="flex items-center gap-2">
+            <LayoutDashboard className="h-4 w-4" />
+            <span className="hidden md:inline">Dashboard</span>
+          </Button>
+        </Link>
+      )}
+      
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+            <Avatar>
+              <AvatarImage src={profile?.avatar_url || ""} alt={profile?.full_name || "User"} />
+              <AvatarFallback>{getInitials()}</AvatarFallback>
+            </Avatar>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="w-56" align="end" forceMount>
+          <DropdownMenuLabel className="font-normal">
+            <div className="flex flex-col space-y-1">
+              <p className="text-sm font-medium leading-none">{profile?.full_name || user.email}</p>
+              <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
+            </div>
+          </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuGroup>
             <DropdownMenuItem asChild>
-              <Link href="/admin">
-                <Settings className="mr-2 h-4 w-4" />
-                <span>Admin Dashboard</span>
+              <Link href="/profile" className="flex w-full cursor-pointer items-center">
+                <UserCircle className="mr-2 h-4 w-4" />
+                <span>Hồ sơ</span>
               </Link>
             </DropdownMenuItem>
-          )}
-        </DropdownMenuGroup>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={handleSignOut}>
-          <LogOut className="mr-2 h-4 w-4" />
-          <span>Log out</span>
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+            <DropdownMenuItem asChild>
+              <Link href="/settings" className="flex w-full cursor-pointer items-center">
+                <Settings className="mr-2 h-4 w-4" />
+                <span>Cài đặt</span>
+              </Link>
+            </DropdownMenuItem>
+            {profile?.role === "admin" && (
+              <DropdownMenuItem asChild>
+                <Link href="/admin/dashboard" className="flex w-full cursor-pointer items-center">
+                  <LayoutDashboard className="mr-2 h-4 w-4" />
+                  <span>Quản trị</span>
+                </Link>
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuGroup>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
+            <LogOut className="mr-2 h-4 w-4" />
+            <span>Đăng xuất</span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
   )
 }

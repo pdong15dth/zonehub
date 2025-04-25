@@ -1,16 +1,17 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Github, Mail } from "lucide-react"
+import { Github, Mail, AlertCircle, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { useSupabase } from "@/components/providers/supabase-provider"
+import { ensureUserInDatabase } from "@/lib/auth-utils"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
 export default function SignIn() {
   const router = useRouter()
@@ -22,67 +23,147 @@ export default function SignIn() {
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
+  const [errorDetails, setErrorDetails] = useState("")
 
   const handleEmailSignIn = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
     setError("")
+    setErrorDetails("")
+
+    if (!email || !password) {
+      setError("Vui lòng nhập email và mật khẩu")
+      setIsLoading(false)
+      return
+    }
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      console.log("Đang đăng nhập với email:", email)
+      
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
 
       if (error) {
-        setError(error.message)
+        console.error("Lỗi đăng nhập:", error)
+        
+        // Xử lý các lỗi cụ thể
+        if (error.message.includes("Invalid login credentials")) {
+          setError("Email hoặc mật khẩu không chính xác")
+          setErrorDetails(`Nếu bạn chưa có tài khoản, hãy đăng ký tài khoản mới.`)
+        } else if (error.message.includes("Email not confirmed")) {
+          setError("Email chưa được xác nhận")
+          setErrorDetails("Vui lòng kiểm tra hộp thư để xác nhận email của bạn")
+        } else {
+          setError(error.message)
+        }
+        
         setIsLoading(false)
         return
       }
 
-      router.push(callbackUrl)
-      router.refresh()
+      // Đăng nhập thành công
+      if (data.user) {
+        console.log("Đăng nhập thành công, đang chuyển hướng đến: ", callbackUrl)
+        
+        // Đảm bảo phiên đăng nhập được thiết lập
+        const { data: sessionCheck } = await supabase.auth.getSession()
+        console.log("Phiên đăng nhập:", sessionCheck?.session?.user?.id)
+        
+        // Đảm bảo người dùng có trong database mà không chờ đợi kết quả
+        try {
+          console.log("Đang đảm bảo dữ liệu người dùng trong DB")
+          const profile = await ensureUserInDatabase(supabase, data.user)
+          console.log("Đã cập nhật/tạo dữ liệu người dùng, vai trò:", profile?.role)
+          
+          // Nếu người dùng là admin và đang cố vào trang admin, chuyển hướng đến dashboard
+          if (profile?.role === "admin" && callbackUrl.includes("/admin")) {
+            console.log("Người dùng là admin và đang vào trang admin, chuyển hướng đến /admin/dashboard")
+            
+            // Delay chuyển hướng để đảm bảo phiên đăng nhập được lưu
+            setTimeout(() => {
+              window.location.href = "/admin/dashboard"
+            }, 500)
+            return
+          }
+        } catch (err) {
+          console.error("Lỗi khi đảm bảo dữ liệu người dùng:", err)
+          // Không ngăn chặn chuyển hướng nếu có lỗi
+        }
+        
+        // Đặt timeout để đảm bảo phiên đăng nhập được lưu trước khi chuyển hướng
+        console.log("Sẽ chuyển hướng đến callback URL sau 500ms:", callbackUrl)
+        setTimeout(() => {
+          window.location.href = callbackUrl
+        }, 500)
+      }
     } catch (error) {
-      setError("Something went wrong. Please try again.")
+      console.error("Lỗi không mong đợi:", error)
+      setError("Đã xảy ra lỗi không mong muốn. Vui lòng thử lại sau.")
       setIsLoading(false)
     }
   }
 
   const handleGithubSignIn = async () => {
-    await supabase.auth.signInWithOAuth({
-      provider: "github",
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback?next=${callbackUrl}`,
-      },
-    })
+    try {
+      await supabase.auth.signInWithOAuth({
+        provider: "github",
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback?next=${callbackUrl}`,
+        },
+      })
+    } catch (error) {
+      console.error("Lỗi đăng nhập GitHub:", error)
+      setError("Lỗi khi đăng nhập bằng GitHub")
+    }
   }
 
   const handleGoogleSignIn = async () => {
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback?next=${callbackUrl}`,
-      },
-    })
+    try {
+      await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback?next=${callbackUrl}`,
+        },
+      })
+    } catch (error) {
+      console.error("Lỗi đăng nhập Google:", error)
+      setError("Lỗi khi đăng nhập bằng Google")
+    }
   }
 
   return (
     <div className="container flex h-screen w-screen flex-col items-center justify-center">
       <Link href="/" className="absolute left-4 top-4 md:left-8 md:top-8 flex items-center gap-2 font-semibold">
-        <span>← Back to home</span>
+        <span>← Quay lại trang chủ</span>
       </Link>
       <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
         <div className="flex flex-col space-y-2 text-center">
           <h1 className="text-2xl font-semibold tracking-tight">Welcome to ZoneHub</h1>
-          <p className="text-sm text-muted-foreground">Sign in to your account to continue</p>
+          <p className="text-sm text-muted-foreground">
+            Đăng nhập vào tài khoản của bạn
+          </p>
         </div>
         <Card>
           <CardHeader>
-            <CardTitle>Sign In</CardTitle>
-            <CardDescription>Enter your email and password to sign in</CardDescription>
+            <CardTitle>Đăng nhập</CardTitle>
+            <CardDescription>
+              Nhập email và mật khẩu để đăng nhập
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {error && <div className="bg-destructive/15 text-destructive text-sm p-2 rounded-md">{error}</div>}
+            {error && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription className="mt-1">
+                  {error}
+                  {errorDetails && (
+                    <p className="text-xs mt-1">{errorDetails}</p>
+                  )}
+                </AlertDescription>
+              </Alert>
+            )}
             <form onSubmit={handleEmailSignIn}>
               <div className="space-y-4">
                 <div className="space-y-2">
@@ -90,7 +171,7 @@ export default function SignIn() {
                   <Input
                     id="email"
                     type="email"
-                    placeholder="m@example.com"
+                    placeholder="your.email@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
@@ -98,9 +179,9 @@ export default function SignIn() {
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="password">Password</Label>
+                    <Label htmlFor="password">Mật khẩu</Label>
                     <Link href="/auth/forgot-password" className="text-sm underline">
-                      Forgot password?
+                      Quên mật khẩu?
                     </Link>
                   </div>
                   <Input
@@ -112,7 +193,14 @@ export default function SignIn() {
                   />
                 </div>
                 <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Signing in..." : "Sign In"}
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Đang đăng nhập...
+                    </>
+                  ) : (
+                    "Đăng nhập"
+                  )}
                 </Button>
               </div>
             </form>
@@ -123,7 +211,7 @@ export default function SignIn() {
                 <div className="w-full border-t"></div>
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
+                <span className="bg-background px-2 text-muted-foreground">Hoặc tiếp tục với</span>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-2">
@@ -137,9 +225,9 @@ export default function SignIn() {
               </Button>
             </div>
             <p className="text-center text-sm text-muted-foreground">
-              Don&apos;t have an account?{" "}
+              Chưa có tài khoản?{" "}
               <Link href="/auth/signup" className="underline">
-                Sign up
+                Đăng ký
               </Link>
             </p>
           </CardFooter>

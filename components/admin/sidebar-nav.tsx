@@ -18,7 +18,7 @@ import {
 const sidebarNavItems = [
   {
     title: "Dashboard",
-    href: "/admin",
+    href: "/admin/dashboard",
     icon: LayoutDashboard,
   },
   {

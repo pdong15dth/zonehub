@@ -24,16 +24,19 @@ export default function SupabaseProvider({
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    console.log("SupabaseProvider mounted - initializing session")
     const getUser = async () => {
       const {
         data: { session },
       } = await supabase.auth.getSession()
       setUser(session?.user ?? null)
       setLoading(false)
+      console.log("SupabaseProvider session initialized:", session?.user?.id)
 
       const {
         data: { subscription },
       } = supabase.auth.onAuthStateChange((_event, session) => {
+        console.log("Auth state changed:", _event, session?.user?.id)
         setUser(session?.user ?? null)
       })
 
