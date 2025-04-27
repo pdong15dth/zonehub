@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import Link from "next/link"
 import { useSupabase } from "@/components/providers/supabase-provider"
 import { Button } from "@/components/ui/button"
@@ -23,25 +23,45 @@ export function UserNav() {
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  useEffect(() => {
-    const loadUserProfile = async () => {
-      if (!user) {
-        setIsLoading(false)
-        return
-      }
-
-      try {
-        const userProfile = await getCurrentUserProfile(supabase)
-        setProfile(userProfile)
-      } catch (error) {
-        console.error("Lỗi khi tải thông tin người dùng:", error)
-      } finally {
-        setIsLoading(false)
-      }
+  // Sử dụng useCallback để tránh tạo hàm mới mỗi khi component re-render
+  const loadUserProfile = useCallback(async (forceRefresh = false) => {
+    if (!user) {
+      setIsLoading(false)
+      setProfile(null)
+      return
     }
 
+    try {
+      const userProfile = await getCurrentUserProfile(forceRefresh)
+      if (userProfile) {
+        setProfile(userProfile)
+      }
+    } catch (error) {
+      console.error("Lỗi khi tải thông tin người dùng:", error)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [user])
+
+  useEffect(() => {
     loadUserProfile()
-  }, [supabase, user])
+    
+    // Theo dõi sự kiện auth state change để reload profile khi cần
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event) => {
+        // Chỉ reload profile khi có sự kiện quan trọng
+        if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+          loadUserProfile(true) // Force refresh khi đăng nhập hoặc cập nhật user
+        } else if (event === 'SIGNED_OUT') {
+          setProfile(null)
+        }
+      }
+    )
+
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [supabase, loadUserProfile])
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()

@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { createContext, useContext, useEffect, useState } from "react"
+import { createContext, useContext, useEffect, useState, useRef } from "react"
 import { createBrowserSupabaseClient } from "@/lib/supabase"
 import type { SupabaseClient, User } from "@supabase/supabase-js"
 
@@ -22,9 +22,11 @@ export default function SupabaseProvider({
   const [supabase] = useState(() => createBrowserSupabaseClient())
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
+  const refreshingRef = useRef(false)  // Biến để theo dõi trạng thái refresh
+  const lastRefreshRef = useRef(0)     // Thời điểm refresh lần cuối
 
   useEffect(() => {
-    console.log("SupabaseProvider mounted - initializing session")
+    const MIN_REFRESH_INTERVAL = 10 * 60 * 1000; // 10 phút giữa các lần refresh
     
     // Immediately check for an existing session
     const initSession = async () => {
@@ -33,7 +35,6 @@ export default function SupabaseProvider({
         const { data: { session } } = await supabase.auth.getSession()
         
         if (session) {
-          console.log("SupabaseProvider found existing session:", session.user.id)
           setUser(session.user)
           
           // Also refresh the session if it's about to expire
@@ -42,18 +43,25 @@ export default function SupabaseProvider({
             const timeNow = Math.floor(Date.now() / 1000)
             const timeUntilExpiry = expiresAt - timeNow
             
-            // If the token expires in less than 1 hour, refresh it
-            if (timeUntilExpiry < 3600) {
+            // Nếu token sắp hết hạn trong vòng 1 giờ VÀ chưa refresh gần đây
+            if (timeUntilExpiry < 3600 && !refreshingRef.current && 
+                Date.now() - lastRefreshRef.current > MIN_REFRESH_INTERVAL) {
               console.log("Session about to expire, refreshing token")
-              const { data } = await supabase.auth.refreshSession()
-              if (data.session) {
-                console.log("Session refreshed successfully")
-                setUser(data.session.user)
+              
+              refreshingRef.current = true;
+              try {
+                const { data } = await supabase.auth.refreshSession()
+                if (data.session) {
+                  console.log("Session refreshed successfully")
+                  setUser(data.session.user)
+                  lastRefreshRef.current = Date.now();
+                }
+              } finally {
+                refreshingRef.current = false;
               }
             }
           }
         } else {
-          console.log("SupabaseProvider no existing session found")
           setUser(null)
         }
         
@@ -69,7 +77,7 @@ export default function SupabaseProvider({
     // Set up the auth state listener for changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log("Auth state changed:", event, session?.user?.id)
+        console.log("Auth state changed:", event)
         
         if (session?.user) {
           setUser(session.user)

@@ -1,3 +1,4 @@
+import { Suspense } from "react"
 import { SourceCodeList } from "@/components/source-code/source-code-list"
 import { SourceCodeFilters } from "@/components/source-code/source-code-filters"
 import { MainNav } from "@/components/main-nav"
@@ -6,6 +7,38 @@ import { ModeToggle } from "@/components/mode-toggle"
 import { Button } from "@/components/ui/button"
 import { Search } from "lucide-react"
 import { Input } from "@/components/ui/input"
+
+// Loading component for source code list
+function SourceCodeListSkeleton() {
+  return (
+    <div className="space-y-6">
+      {Array(3).fill(0).map((_, i) => (
+        <div key={i} className="border rounded-md p-4">
+          <div className="flex justify-between items-start">
+            <div className="space-y-2">
+              <div className="h-5 w-40 bg-muted rounded animate-pulse"></div>
+              <div className="h-4 w-24 bg-muted rounded animate-pulse"></div>
+            </div>
+            <div className="h-6 w-16 bg-muted rounded animate-pulse"></div>
+          </div>
+          <div className="mt-4 space-y-2">
+            <div className="h-4 w-full bg-muted rounded animate-pulse"></div>
+            <div className="h-4 w-3/4 bg-muted rounded animate-pulse"></div>
+          </div>
+          <div className="mt-4 flex gap-2">
+            <div className="h-6 w-16 bg-muted rounded animate-pulse"></div>
+            <div className="h-6 w-16 bg-muted rounded animate-pulse"></div>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+export const metadata = {
+  title: 'Source Code - ZoneHub',
+  description: 'Browse and download source code, mods, plugins, and mini-games on ZoneHub.'
+}
 
 export default function SourceCodePage() {
   return (
@@ -37,10 +70,14 @@ export default function SourceCodePage() {
             </div>
             <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
               <div className="md:col-span-1">
-                <SourceCodeFilters />
+                <Suspense fallback={<div className="animate-pulse h-96 bg-muted rounded-md"></div>}>
+                  <SourceCodeFilters />
+                </Suspense>
               </div>
               <div className="md:col-span-3">
-                <SourceCodeList />
+                <Suspense fallback={<SourceCodeListSkeleton />}>
+                  <SourceCodeList />
+                </Suspense>
               </div>
             </div>
           </div>

@@ -3,7 +3,7 @@ export interface UserProfile {
   created_at: string;
   updated_at?: string;
   username?: string | null;
-  email: string;
+  email?: string | null;
   full_name: string | null;
   avatar_url: string | null;
   role: 'admin' | 'member' | 'editor';

@@ -1,3 +1,4 @@
+import { Suspense } from "react"
 import { notFound } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -51,6 +52,197 @@ const repositories = [
   },
 ]
 
+// This allows Next.js to prerender pages at build time
+export function generateStaticParams() {
+  return repositories.map(repo => ({
+    id: repo.id.toString()
+  }))
+}
+
+// Generate metadata for each page
+export function generateMetadata({ params }: { params: { id: string } }) {
+  const id = parseInt(params.id)
+  const repository = repositories.find(repo => repo.id === id)
+  
+  if (!repository) {
+    return {
+      title: 'Repository Not Found',
+      description: 'The requested source code repository could not be found.'
+    }
+  }
+
+  return {
+    title: `${repository.title} - ZoneHub Source Code`,
+    description: repository.description,
+  }
+}
+
+// Separate component for repository details
+function RepositoryDetailsHeader({ repository }: { repository: typeof repositories[0] }) {
+  return (
+    <>
+      <Button variant="ghost" size="sm" className="mb-4" asChild>
+        <Link href="/source-code">
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to source code
+        </Link>
+      </Button>
+      <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">{repository.title}</h1>
+          <div className="flex items-center gap-2 mt-2">
+            <p className="text-muted-foreground">
+              by{" "}
+              <Link href={`/profile/${repository.author}`} className="hover:underline">
+                {repository.author}
+              </Link>
+            </p>
+            <Badge>{repository.language}</Badge>
+          </div>
+        </div>
+        <div className="flex gap-2 mt-4 md:mt-0">
+          <Button variant="outline" className="gap-1">
+            <Star className="h-4 w-4" />
+            Star
+          </Button>
+          <Button variant="outline" className="gap-1">
+            <GitFork className="h-4 w-4" />
+            Fork
+          </Button>
+          <Button className="gap-1">
+            <Download className="h-4 w-4" />
+            Download
+          </Button>
+        </div>
+      </div>
+    </>
+  )
+}
+
+// Separate component for code content
+function CodeContent({ repository }: { repository: typeof repositories[0] }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>About</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p>{repository.description}</p>
+        <div className="flex flex-wrap gap-2 mt-4">
+          {repository.tags.map((tag) => (
+            <Badge key={tag} variant="outline">
+              {tag}
+            </Badge>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+// Lazy-loaded tabs content
+function CodeTabs({ repository }: { repository: typeof repositories[0] }) {
+  return (
+    <Tabs defaultValue="readme">
+      <TabsList className="grid w-full grid-cols-2">
+        <TabsTrigger value="readme">README</TabsTrigger>
+        <TabsTrigger value="code">Code Sample</TabsTrigger>
+      </TabsList>
+      <TabsContent value="readme" className="mt-4">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="prose dark:prose-invert max-w-none">
+              <pre className="whitespace-pre-wrap font-mono text-sm">{repository.readme}</pre>
+            </div>
+          </CardContent>
+        </Card>
+      </TabsContent>
+      <TabsContent value="code" className="mt-4">
+        <Card>
+          <CardContent className="pt-6">
+            <pre className="bg-muted p-4 rounded-lg overflow-x-auto">
+              <code className="text-sm font-mono">{repository.code}</code>
+            </pre>
+          </CardContent>
+        </Card>
+      </TabsContent>
+    </Tabs>
+  )
+}
+
+// Repository sidebar info
+function RepositorySidebar({ repository }: { repository: typeof repositories[0] }) {
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Repository Stats</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex flex-col">
+              <span className="text-muted-foreground text-sm">Stars</span>
+              <span className="font-medium flex items-center gap-1">
+                <Star className="h-4 w-4" />
+                {repository.stars}
+              </span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-muted-foreground text-sm">Forks</span>
+              <span className="font-medium flex items-center gap-1">
+                <GitFork className="h-4 w-4" />
+                {repository.forks}
+              </span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-muted-foreground text-sm">Views</span>
+              <span className="font-medium flex items-center gap-1">
+                <Eye className="h-4 w-4" />
+                {repository.views}
+              </span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-muted-foreground text-sm">Downloads</span>
+              <span className="font-medium flex items-center gap-1">
+                <Download className="h-4 w-4" />
+                {repository.downloads}
+              </span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Information</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <div>
+            <h4 className="text-sm font-medium text-muted-foreground">Created</h4>
+            <p>{repository.createdAt}</p>
+          </div>
+          <div>
+            <h4 className="text-sm font-medium text-muted-foreground">Last Updated</h4>
+            <p>{repository.updatedAt}</p>
+          </div>
+          <div>
+            <h4 className="text-sm font-medium text-muted-foreground">License</h4>
+            <p>{repository.license}</p>
+          </div>
+          <div>
+            <h4 className="text-sm font-medium text-muted-foreground">Dependencies</h4>
+            <ul className="list-disc list-inside">
+              {repository.dependencies.map((dep) => (
+                <li key={dep}>{dep}</li>
+              ))}
+            </ul>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
 export default function SourceCodePage({ params }: { params: { id: string } }) {
   const id = parseInt(params.id)
   const repository = repositories.find(repo => repo.id === id)
@@ -73,153 +265,21 @@ export default function SourceCodePage({ params }: { params: { id: string } }) {
       <main className="flex-1">
         <div className="container py-8">
           <div className="flex flex-col gap-8">
-            <div>
-              <Button variant="ghost" size="sm" className="mb-4" asChild>
-                <Link href="/source-code">
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  Back to source code
-                </Link>
-              </Button>
-              <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
-                <div>
-                  <h1 className="text-3xl font-bold tracking-tight">{repository.title}</h1>
-                  <div className="flex items-center gap-2 mt-2">
-                    <p className="text-muted-foreground">
-                      by{" "}
-                      <Link href={`/profile/${repository.author}`} className="hover:underline">
-                        {repository.author}
-                      </Link>
-                    </p>
-                    <Badge>{repository.language}</Badge>
-                  </div>
-                </div>
-                <div className="flex gap-2 mt-4 md:mt-0">
-                  <Button variant="outline" className="gap-1">
-                    <Star className="h-4 w-4" />
-                    Star
-                  </Button>
-                  <Button variant="outline" className="gap-1">
-                    <GitFork className="h-4 w-4" />
-                    Fork
-                  </Button>
-                  <Button className="gap-1">
-                    <Download className="h-4 w-4" />
-                    Download
-                  </Button>
-                </div>
-              </div>
-            </div>
+            <RepositoryDetailsHeader repository={repository} />
 
             <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
               <div className="md:col-span-2 space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>About</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p>{repository.description}</p>
-                    <div className="flex flex-wrap gap-2 mt-4">
-                      {repository.tags.map((tag) => (
-                        <Badge key={tag} variant="outline">
-                          {tag}
-                        </Badge>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Tabs defaultValue="readme">
-                  <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="readme">README</TabsTrigger>
-                    <TabsTrigger value="code">Code Sample</TabsTrigger>
-                  </TabsList>
-                  <TabsContent value="readme" className="mt-4">
-                    <Card>
-                      <CardContent className="pt-6">
-                        <div className="prose dark:prose-invert max-w-none">
-                          <pre className="whitespace-pre-wrap font-mono text-sm">{repository.readme}</pre>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </TabsContent>
-                  <TabsContent value="code" className="mt-4">
-                    <Card>
-                      <CardContent className="pt-6">
-                        <pre className="bg-muted p-4 rounded-lg overflow-x-auto">
-                          <code className="text-sm font-mono">{repository.code}</code>
-                        </pre>
-                      </CardContent>
-                    </Card>
-                  </TabsContent>
-                </Tabs>
+                <CodeContent repository={repository} />
+                
+                <Suspense fallback={<div className="h-48 rounded-md bg-muted animate-pulse"></div>}>
+                  <CodeTabs repository={repository} />
+                </Suspense>
               </div>
 
-              <div className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Repository Stats</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="flex flex-col">
-                        <span className="text-muted-foreground text-sm">Stars</span>
-                        <span className="font-medium flex items-center gap-1">
-                          <Star className="h-4 w-4" />
-                          {repository.stars}
-                        </span>
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-muted-foreground text-sm">Forks</span>
-                        <span className="font-medium flex items-center gap-1">
-                          <GitFork className="h-4 w-4" />
-                          {repository.forks}
-                        </span>
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-muted-foreground text-sm">Views</span>
-                        <span className="font-medium flex items-center gap-1">
-                          <Eye className="h-4 w-4" />
-                          {repository.views}
-                        </span>
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-muted-foreground text-sm">Downloads</span>
-                        <span className="font-medium flex items-center gap-1">
-                          <Download className="h-4 w-4" />
-                          {repository.downloads}
-                        </span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Information</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <div>
-                      <h4 className="text-sm font-medium text-muted-foreground">Created</h4>
-                      <p>{repository.createdAt}</p>
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-medium text-muted-foreground">Last Updated</h4>
-                      <p>{repository.updatedAt}</p>
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-medium text-muted-foreground">License</h4>
-                      <p>{repository.license}</p>
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-medium text-muted-foreground">Dependencies</h4>
-                      <ul className="list-disc list-inside">
-                        {repository.dependencies.map((dep) => (
-                          <li key={dep}>{dep}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  </CardContent>
-                </Card>
+              <div>
+                <Suspense fallback={<div className="h-96 rounded-md bg-muted animate-pulse"></div>}>
+                  <RepositorySidebar repository={repository} />
+                </Suspense>
               </div>
             </div>
           </div>
