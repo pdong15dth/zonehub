@@ -6,6 +6,13 @@ import { ModeToggle } from "@/components/mode-toggle"
 import { Button } from "@/components/ui/button"
 import { Search } from "lucide-react"
 import { Input } from "@/components/ui/input"
+import Link from "next/link"
+
+// Mock game data for creating links
+const games = [
+  { id: 1, title: "Cyberpunk Legends" },
+  { id: 2, title: "Fantasy Kingdom" }
+]
 
 export default function GamesPage() {
   return (
@@ -41,6 +48,23 @@ export default function GamesPage() {
               </div>
               <div className="md:col-span-3">
                 <GamesList />
+                
+                {/* Temporary links to game detail pages */}
+                <div className="mt-8 p-4 border rounded-lg">
+                  <h3 className="text-lg font-medium mb-4">Game chi tiết (Liên kết tạm thời)</h3>
+                  <ul className="space-y-2">
+                    {games.map(game => (
+                      <li key={game.id}>
+                        <Link 
+                          href={`/games/${game.id}`}
+                          className="text-blue-600 hover:underline"
+                        >
+                          {game.title}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
             </div>
           </div>

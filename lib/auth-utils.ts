@@ -79,7 +79,18 @@ export async function ensureUserInDatabase(supabase: SupabaseClient<Database>, u
 /**
  * Lấy thông tin profile của người dùng hiện tại
  */
+// Biến lưu cache cho profile người dùng
+let userProfileCache: UserProfile | null = null;
+let lastFetchTime = 0;
+const CACHE_DURATION = 60000; // 1 minute cache
+
 export async function getCurrentUserProfile(): Promise<UserProfile | null> {
+  // Check cache first
+  const now = Date.now();
+  if (userProfileCache && (now - lastFetchTime < CACHE_DURATION)) {
+    return userProfileCache;
+  }
+  
   // Sử dụng createBrowserSupabaseClient - sẽ trả về instance duy nhất
   const supabase = createBrowserSupabaseClient()
   
@@ -110,16 +121,23 @@ export async function getCurrentUserProfile(): Promise<UserProfile | null> {
     console.log("getCurrentUserProfile - found profile with role:", userData.role)
     
     // Chuyển đổi dữ liệu sang định dạng UserProfile
-    const userProfile: UserProfile = {
+    // Ensure email is always a string
+    const email: string = (userData?.email || user?.email || "") as string;
+    
+    const userProfile = {
       id: userData.id,
       created_at: userData.created_at,
       updated_at: userData.created_at,
-      username: userData.email ? userData.email.split('@')[0] : null,
-      email: String(userData.email || user.email || ""),
+      username: email ? email.split('@')[0] : null,
+      email: email,
       full_name: userData.full_name,
       avatar_url: userData.avatar_url,
       role: userData.role
-    }
+    } as UserProfile;
+    
+    // Update cache
+    userProfileCache = userProfile;
+    lastFetchTime = now;
     
     return userProfile
   } catch (error) {

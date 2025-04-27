@@ -7,6 +7,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { AdminOverview } from "@/components/admin/admin-overview"
 import { RecentActivity } from "@/components/admin/recent-activity"
 import { AdminStats } from "@/components/admin/admin-stats"
+import { UserManagement } from "@/components/admin/user-management"
+import { ZoneManagement } from "@/components/admin/zone-management"
+import { ReportsDashboard } from "@/components/admin/reports-dashboard"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AlertCircle, Loader2 } from "lucide-react"
 import { getCurrentUserProfile } from "@/lib/auth-utils"
@@ -160,9 +163,7 @@ export default function AdminDashboard() {
               <CardDescription>Xem và quản lý tài khoản người dùng</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="h-[400px] flex items-center justify-center border rounded-md">
-                <p className="text-muted-foreground">Danh sách người dùng sẽ hiển thị tại đây</p>
-              </div>
+              <UserManagement />
             </CardContent>
           </Card>
         </TabsContent>
@@ -173,24 +174,12 @@ export default function AdminDashboard() {
               <CardDescription>Xem và quản lý các vùng trong hệ thống</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="h-[400px] flex items-center justify-center border rounded-md">
-                <p className="text-muted-foreground">Danh sách vùng sẽ hiển thị tại đây</p>
-              </div>
+              <ZoneManagement />
             </CardContent>
           </Card>
         </TabsContent>
         <TabsContent value="reports" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Báo cáo</CardTitle>
-              <CardDescription>Thống kê và báo cáo về hoạt động hệ thống</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[400px] flex items-center justify-center border rounded-md">
-                <p className="text-muted-foreground">Báo cáo sẽ hiển thị tại đây</p>
-              </div>
-            </CardContent>
-          </Card>
+          <ReportsDashboard />
         </TabsContent>
       </Tabs>
     </div>

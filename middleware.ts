@@ -4,11 +4,12 @@ import { createServerSupabaseClient } from "@/lib/supabase"
 import { ensureUserInDatabase } from "@/lib/auth-utils"
 
 export async function middleware(request: NextRequest) {
-  const path = request.nextUrl.pathname
+  const url = request.nextUrl.clone()
+  const path = url.pathname
   console.log(`Middleware running for path: ${path}`)
   
-  // Bỏ qua middleware cho một số trang đặc biệt
-  if (path === "/debug" || path === "/admin/dashboard") {
+  // Bỏ qua middleware cho một số trang đặc biệt hoặc đường dẫn tin tức
+  if (path === "/debug" || path.startsWith("/admin/") || path.startsWith("/news/") || path === '/news') {
     console.log(`Skipping middleware for special page: ${path}`)
     return NextResponse.next()
   }
@@ -66,37 +67,6 @@ export async function middleware(request: NextRequest) {
         await ensureUserInDatabase(supabase, session.user)
       } catch (error) {
         console.error("Error ensuring user in database:", error)
-      }
-    }
-  
-    // Kiểm tra đường dẫn admin (trừ dashboard đã được bỏ qua trước đó)
-    const isAdminPath = path.startsWith("/admin") && path !== "/admin/dashboard"
-  
-    if (isAdminPath) {
-      console.log("Admin path detected:", path)
-      // Nếu không có phiên, chuyển hướng đến đăng nhập
-      if (!session) {
-        console.log("No session, redirecting to signin")
-        const url = new URL("/auth/signin", request.url)
-        url.searchParams.set("callbackUrl", request.url)
-        return NextResponse.redirect(url)
-      }
-  
-      // Kiểm tra người dùng có quyền admin không
-      try {
-        const { data: userData } = await supabase.from("users").select("role").eq("id", session.user.id).single()
-        console.log("User role for admin access:", userData?.role)
-        
-        // Nếu không phải admin, chuyển hướng về trang chủ
-        if (!userData || userData.role !== "admin") {
-          console.log("User is not admin, redirecting to home")
-          return NextResponse.redirect(new URL("/", request.url))
-        }
-        
-        console.log("Admin access granted, continuing to:", path)
-      } catch (error) {
-        console.error("Error checking admin role:", error)
-        return NextResponse.redirect(new URL("/", request.url))
       }
     }
   } catch (error) {

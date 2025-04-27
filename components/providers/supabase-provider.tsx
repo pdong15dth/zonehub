@@ -25,27 +25,64 @@ export default function SupabaseProvider({
 
   useEffect(() => {
     console.log("SupabaseProvider mounted - initializing session")
-    const getUser = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
-      setUser(session?.user ?? null)
-      setLoading(false)
-      console.log("SupabaseProvider session initialized:", session?.user?.id)
-
-      const {
-        data: { subscription },
-      } = supabase.auth.onAuthStateChange((_event, session) => {
-        console.log("Auth state changed:", _event, session?.user?.id)
-        setUser(session?.user ?? null)
-      })
-
-      return () => {
-        subscription.unsubscribe()
+    
+    // Immediately check for an existing session
+    const initSession = async () => {
+      try {
+        // Get the current session
+        const { data: { session } } = await supabase.auth.getSession()
+        
+        if (session) {
+          console.log("SupabaseProvider found existing session:", session.user.id)
+          setUser(session.user)
+          
+          // Also refresh the session if it's about to expire
+          if (session.expires_at) {
+            const expiresAt = session.expires_at
+            const timeNow = Math.floor(Date.now() / 1000)
+            const timeUntilExpiry = expiresAt - timeNow
+            
+            // If the token expires in less than 1 hour, refresh it
+            if (timeUntilExpiry < 3600) {
+              console.log("Session about to expire, refreshing token")
+              const { data } = await supabase.auth.refreshSession()
+              if (data.session) {
+                console.log("Session refreshed successfully")
+                setUser(data.session.user)
+              }
+            }
+          }
+        } else {
+          console.log("SupabaseProvider no existing session found")
+          setUser(null)
+        }
+        
+        setLoading(false)
+      } catch (error) {
+        console.error("Error initializing session:", error)
+        setLoading(false)
       }
     }
+    
+    initSession()
+    
+    // Set up the auth state listener for changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log("Auth state changed:", event, session?.user?.id)
+        
+        if (session?.user) {
+          setUser(session.user)
+        } else {
+          setUser(null)
+        }
+      }
+    )
 
-    getUser()
+    // Clean up subscription on unmount
+    return () => {
+      subscription.unsubscribe()
+    }
   }, [supabase])
 
   return <Context.Provider value={{ supabase, user, loading }}>{children}</Context.Provider>
