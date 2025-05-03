@@ -2,6 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { Newspaper, GamepadIcon as GameController, Code } from "lucide-react"
+import Link from "next/link"
 
 export default function ContentManagement() {
   return (
@@ -20,9 +21,11 @@ export default function ContentManagement() {
         <TabsContent value="news" className="space-y-4">
           <div className="flex justify-between items-center">
             <h2 className="text-2xl font-bold">News Articles</h2>
-            <Button>
-              <Newspaper className="mr-2 h-4 w-4" />
-              Add New Article
+            <Button asChild>
+              <Link href="/admin/content/news/create">
+                <Newspaper className="mr-2 h-4 w-4" />
+                Add New Article
+              </Link>
             </Button>
           </div>
           <Card>

@@ -57,6 +57,7 @@ import {
   FileText,
   Image
 } from "lucide-react"
+import Link from "next/link"
 
 // Sample data
 const newsArticles = [
@@ -171,110 +172,20 @@ export default function NewsPage() {
       </div>
 
       <Tabs defaultValue="all" className="space-y-4">
-        <div className="flex justify-between items-center">
-          <TabsList>
+        <div className="flex items-center justify-between">
+          <TabsList className="grid grid-cols-5 w-fit">
             <TabsTrigger value="all">Tất cả</TabsTrigger>
             <TabsTrigger value="published">Đã đăng</TabsTrigger>
             <TabsTrigger value="draft">Bản nháp</TabsTrigger>
             <TabsTrigger value="scheduled">Đã lên lịch</TabsTrigger>
+            <TabsTrigger value="trash">Thùng rác</TabsTrigger>
           </TabsList>
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button className="flex items-center gap-1">
-                <Plus className="h-4 w-4" />
-                <span>Bài viết mới</span>
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[625px]">
-              <DialogHeader>
-                <DialogTitle>Tạo bài viết mới</DialogTitle>
-                <DialogDescription>
-                  Điền thông tin để tạo bài viết mới. Bài viết sẽ ở trạng thái nháp cho đến khi được đăng.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid gap-2">
-                  <label htmlFor="title" className="text-sm font-medium">
-                    Tiêu đề
-                  </label>
-                  <Input id="title" placeholder="Nhập tiêu đề bài viết" />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="grid gap-2">
-                    <label htmlFor="category" className="text-sm font-medium">
-                      Danh mục
-                    </label>
-                    <Select defaultValue="game">
-                      <SelectTrigger>
-                        <SelectValue placeholder="Chọn danh mục" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="console">Console</SelectItem>
-                        <SelectItem value="game">Game</SelectItem>
-                        <SelectItem value="review">Review</SelectItem>
-                        <SelectItem value="service">Dịch vụ</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="grid gap-2">
-                    <label htmlFor="featured" className="text-sm font-medium">
-                      Nổi bật
-                    </label>
-                    <Select defaultValue="false">
-                      <SelectTrigger>
-                        <SelectValue placeholder="Chọn trạng thái" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="true">Có</SelectItem>
-                        <SelectItem value="false">Không</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div className="grid gap-2">
-                  <label htmlFor="summary" className="text-sm font-medium">
-                    Tóm tắt
-                  </label>
-                  <Input id="summary" placeholder="Nhập tóm tắt ngắn về bài viết" />
-                </div>
-                <div className="grid gap-2">
-                  <label htmlFor="image" className="text-sm font-medium">
-                    Ảnh bìa
-                  </label>
-                  <div className="flex gap-2">
-                    <Input id="image" placeholder="Chọn ảnh bìa" disabled />
-                    <Button variant="outline" type="button" className="flex items-center gap-1">
-                      <Image className="h-4 w-4" />
-                      <span>Chọn ảnh</span>
-                    </Button>
-                  </div>
-                </div>
-                <div className="grid gap-2">
-                  <label className="text-sm font-medium">
-                    Trạng thái bài viết
-                  </label>
-                  <div className="flex space-x-4">
-                    <Button variant="outline" type="button" className="flex items-center gap-1">
-                      <FileEdit className="h-4 w-4" />
-                      <span>Lưu nháp</span>
-                    </Button>
-                    <Button variant="outline" type="button" className="flex items-center gap-1">
-                      <Calendar className="h-4 w-4" />
-                      <span>Lên lịch</span>
-                    </Button>
-                    <Button type="button" className="flex items-center gap-1">
-                      <FileText className="h-4 w-4" />
-                      <span>Đăng ngay</span>
-                    </Button>
-                  </div>
-                </div>
-              </div>
-              <DialogFooter>
-                <Button variant="outline">Hủy</Button>
-                <Button>Tạo bài viết</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <Button className="flex items-center gap-1" asChild>
+            <Link href="/admin/content/news/create">
+              <Plus className="h-4 w-4" />
+              <span>Bài viết mới</span>
+            </Link>
+          </Button>
         </div>
 
         <div className="flex flex-col md:flex-row gap-3 mb-6">

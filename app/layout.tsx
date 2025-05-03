@@ -2,6 +2,7 @@ import type React from "react"
 import type { Metadata, Viewport } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
+import "@/styles/ckeditor.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import SupabaseProvider from "@/components/providers/supabase-provider"
 
@@ -25,7 +26,7 @@ export const metadata: Metadata = {
   title: "ZoneHub - Gaming Community Platform",
   description: "Connect with gamers and developers, share news, games, and source code",
   generator: 'v0.dev',
-  metadataBase: new URL('https://zonehub.example.com')
+  metadataBase: new URL('https://zonehub.io.com')
 }
 
 export default function RootLayout({

@@ -1,0 +1,108 @@
+/**
+ * CKEditor 5 custom styles
+ */
+
+:root {
+  --ck-color-toolbar-background: #f8f9fa;
+  --ck-color-toolbar-border: #e9ecef;
+  --ck-border-radius: 4px;
+  --ck-color-focus-border: #0ea5e9;
+  --ck-color-base-focus: #e6f4f1;
+  --ck-focus-ring: 1px solid var(--ck-color-focus-border);
+}
+
+.ck-content {
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  min-height: 400px;
+  max-height: 800px;
+  overflow-y: auto !important;
+}
+
+.ck.ck-editor__editable:not(.ck-editor__nested-editable).ck-focused {
+  border-color: var(--ck-color-focus-border);
+}
+
+.ck.ck-editor {
+  width: 100%;
+}
+
+.ck.ck-editor__main > .ck-editor__editable {
+  background-color: white;
+  border: 1px solid #e2e8f0;
+  min-height: 400px;
+}
+
+.ck.ck-toolbar {
+  background-color: var(--ck-color-toolbar-background);
+  border: 1px solid var(--ck-color-toolbar-border);
+  border-bottom: 0;
+}
+
+/* Style for content in read-only mode */
+.prose .ck-content h1, 
+.prose .ck-content h2, 
+.prose .ck-content h3, 
+.prose .ck-content h4, 
+.prose .ck-content h5, 
+.prose .ck-content h6 {
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.prose .ck-content h1 {
+  font-size: 2.25rem;
+}
+
+.prose .ck-content h2 {
+  font-size: 1.875rem;
+}
+
+.prose .ck-content h3 {
+  font-size: 1.5rem;
+}
+
+.prose .ck-content h4 {
+  font-size: 1.25rem;
+}
+
+.prose .ck-content p {
+  margin-bottom: 1em;
+}
+
+.prose .ck-content ul, 
+.prose .ck-content ol {
+  margin-bottom: 1em;
+  padding-left: 1.5em;
+}
+
+.prose .ck-content blockquote {
+  border-left: 4px solid #e2e8f0;
+  padding-left: 1em;
+  margin-left: 0;
+  font-style: italic;
+  color: #4a5568;
+}
+
+.prose .ck-content img {
+  max-width: 100%;
+  height: auto;
+}
+
+.prose .ck-content table {
+  border-collapse: collapse;
+  width: 100%;
+  margin-bottom: 1em;
+}
+
+.prose .ck-content table td,
+.prose .ck-content table th {
+  border: 1px solid #e2e8f0;
+  padding: 0.5em;
+}
+
+.prose .ck-content figure {
+  margin: 1em 0;
+} 
