@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
 import { CreationForm } from './_components/creation-form';
-import { SetupDatabaseButton } from './_components/setup-database-button';
 
 export const metadata: Metadata = {
   title: 'Tạo bài viết mới | Admin',
@@ -33,9 +32,6 @@ export default function CreateNewsPage() {
       </div>
       
       <div className="bg-card border rounded-lg p-6 shadow-sm">
-        <div className="mb-6">
-          <SetupDatabaseButton />
-        </div>
         <CreationForm />
       </div>
     </>
