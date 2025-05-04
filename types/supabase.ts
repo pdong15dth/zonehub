@@ -35,6 +35,80 @@ export interface Database {
           role?: 'admin' | 'member' | 'editor'
         }
       }
+      games: {
+        Row: {
+          id: string
+          title: string
+          developer: string
+          publisher: string
+          release_date: string
+          description: string | null
+          content: string | null
+          system_requirements: string | null
+          trailer_url: string | null
+          official_website: string | null
+          platform: string[]
+          genre: string[]
+          rating: number
+          downloads: number
+          status: 'draft' | 'published'
+          featured: boolean
+          image: string | null
+          created_by: string | null
+          updated_by: string | null
+          author_id: string | null
+          created_at: string
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          title: string
+          developer: string
+          publisher: string
+          release_date: string
+          description?: string | null
+          content?: string | null
+          system_requirements?: string | null
+          trailer_url?: string | null
+          official_website?: string | null
+          platform: string[]
+          genre: string[]
+          rating: number
+          downloads: number
+          status?: 'draft' | 'published'
+          featured?: boolean
+          image?: string | null
+          created_by?: string | null
+          updated_by?: string | null
+          author_id?: string | null
+          created_at?: string
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          title?: string
+          developer?: string
+          publisher?: string
+          release_date?: string
+          description?: string | null
+          content?: string | null
+          system_requirements?: string | null
+          trailer_url?: string | null
+          official_website?: string | null
+          platform?: string[]
+          genre?: string[]
+          rating?: number
+          downloads?: number
+          status?: 'draft' | 'published'
+          featured?: boolean
+          image?: string | null
+          created_by?: string | null
+          updated_by?: string | null
+          author_id?: string | null
+          created_at?: string
+          updated_at?: string | null
+        }
+      }
       zones: {
         Row: {
           id: string

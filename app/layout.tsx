@@ -5,6 +5,7 @@ import "./globals.css"
 import "@/styles/ckeditor.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import SupabaseProvider from "@/components/providers/supabase-provider"
+import { Toaster } from "@/components/ui/toaster"
 
 const inter = Inter({ 
   subsets: ["latin"],
@@ -44,6 +45,7 @@ export default function RootLayout({
             </div>
           </ThemeProvider>
         </SupabaseProvider>
+        <Toaster />
       </body>
     </html>
   )
