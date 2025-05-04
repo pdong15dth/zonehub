@@ -13,6 +13,7 @@ import {
   BarChart,
   FileText,
   Shield,
+  Database,
 } from "lucide-react"
 
 const sidebarNavItems = [
@@ -57,6 +58,11 @@ const sidebarNavItems = [
     title: "Moderation",
     href: "/admin/moderation",
     icon: Shield,
+  },
+  {
+    title: "Database",
+    href: "/admin/database",
+    icon: Database,
   },
   {
     title: "Settings",

@@ -1,15 +1,15 @@
-import { Metadata } from 'next';
+'use client';
+
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
-import { CreationForm } from './_components/creation-form';
+import { EditForm } from '@/app/admin/content/news/edit/_components/edit-form';
+import { useParams } from 'next/navigation';
 
-export const metadata: Metadata = {
-  title: 'Tạo bài viết mới | Admin',
-  description: 'Tạo và xuất bản bài viết tin tức mới',
-};
-
-export default function CreateNewsPage() {
+export default function EditNewsPage() {
+  const params = useParams();
+  const articleId = Array.isArray(params.id) ? params.id[0] : params.id as string;
+  
   return (
     <div className="">
       <div className="flex items-center space-x-2 mb-6">
@@ -26,12 +26,12 @@ export default function CreateNewsPage() {
         </Button>
       </div>
       
-      <h1 className="text-2xl font-bold tracking-tight mb-3">Tạo bài viết mới</h1>
+      <h1 className="text-2xl font-bold tracking-tight mb-3">Chỉnh sửa bài viết</h1>
       <p className="text-muted-foreground mb-6">
-        Điền đầy đủ thông tin để tạo bài viết tin tức mới.
+        Chỉnh sửa thông tin bài viết tin tức.
       </p>
       
-      <CreationForm />
+      <EditForm articleId={articleId} />
     </div>
   );
 } 

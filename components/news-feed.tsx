@@ -8,6 +8,7 @@ import Link from "next/link"
 const newsItems = [
   {
     id: 1,
+    slug: "cyberpunk-2077-dlc-announced",
     title: "New Cyberpunk 2077 DLC Announced",
     description:
       "CD Projekt Red has announced a new expansion for Cyberpunk 2077, bringing new storylines and gameplay features.",
@@ -24,6 +25,7 @@ const newsItems = [
   },
   {
     id: 2,
+    slug: "playstation-6-rumors-surface",
     title: "PlayStation 6 Rumors Surface",
     description:
       "Industry insiders have begun sharing details about Sony's next-generation console, expected to launch in 2026.",
@@ -40,6 +42,7 @@ const newsItems = [
   },
   {
     id: 3,
+    slug: "hollow-knight-silksong-release-date",
     title: "Indie Game 'Hollow Knight: Silksong' Finally Gets Release Date",
     description:
       "Team Cherry has announced that the highly anticipated sequel to Hollow Knight will be released next month.",
@@ -79,7 +82,7 @@ export function NewsFeed() {
               </div>
             </div>
             <CardTitle>
-              <Link href={`/news/${item.id}`} className="hover:underline">
+              <Link href={`/news/${item.slug}/${item.id}`} className="hover:underline">
                 {item.title}
               </Link>
             </CardTitle>

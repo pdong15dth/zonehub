@@ -17,8 +17,6 @@ const SKIP_MIDDLEWARE_PATHS = [
   '/debug',
   '/admin/', // Admin paths are handled separately
   '/api/', // API routes should be fast
-  '/news/',
-  '/news',
   '/_next/',
   '/static/',
   '/favicon.ico',
@@ -83,6 +81,47 @@ export async function middleware(request: NextRequest) {
     }
   } catch (error) {
     console.error("Error in middleware:", error)
+  }
+
+  const url = request.nextUrl.clone()
+  const { pathname } = url
+  
+  // Handle article URL redirects
+  // Check if URL is using the old format /news/[slug]
+  if (pathname.startsWith('/news/') && 
+      !pathname.includes('/news/create') && 
+      !pathname.includes('/news/page') && 
+      pathname.split('/').length === 3) {
+    try {
+      // Get slug from URL
+      const slug = pathname.split('/')[2]
+      
+      // Create URL for Supabase API to find article by slug
+      const apiUrl = process.env.NEXT_PUBLIC_SUPABASE_URL 
+        ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/articles?slug=eq.${slug}&select=id,slug&apikey=${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`
+        : null
+
+      if (apiUrl) {
+        // Call Supabase API to get article id
+        const response = await fetch(apiUrl, {
+          headers: { 'Content-Type': 'application/json' },
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          
+          // If article found, redirect to new URL format
+          if (data && data.length > 0) {
+            return NextResponse.redirect(
+              new URL(`/news/${slug}/${data[0].id}`, request.url),
+              { status: 301 } // Permanent redirect for better SEO
+            )
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error in middleware redirect:', error)
+    }
   }
 
   return NextResponse.next()

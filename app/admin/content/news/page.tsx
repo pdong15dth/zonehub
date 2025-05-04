@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
   Card,
   CardContent,
@@ -55,9 +55,28 @@ import {
   FileEdit,
   Calendar,
   FileText,
-  Image
+  Image,
+  PlusCircle,
+  FileCheck,
+  Clock,
+  Trash2,
 } from "lucide-react"
 import Link from "next/link"
+import { formatDistanceToNow } from 'date-fns'
+import { vi } from 'date-fns/locale'
+import { useSupabase } from '@/components/providers/supabase-provider'
+import { toast } from 'sonner'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 // Sample data
 const newsArticles = [
@@ -118,344 +137,270 @@ const newsArticles = [
   },
 ]
 
-export default function NewsPage() {
-  const [searchTerm, setSearchTerm] = useState("")
-  const [categoryFilter, setCategoryFilter] = useState("all")
-  const [statusFilter, setStatusFilter] = useState("all")
+export default function NewsListPage() {
+  const [articles, setArticles] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState("")
+  const { supabase } = useSupabase()
+  const [deleteArticleId, setDeleteArticleId] = useState<string | null>(null)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
 
-  // Filter articles based on search and filters
-  const filteredArticles = newsArticles.filter(article => {
-    const matchesSearch = article.title.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesCategory = categoryFilter === "all" || article.category === categoryFilter
-    const matchesStatus = statusFilter === "all" || article.status === statusFilter
-    
-    return matchesSearch && matchesCategory && matchesStatus
-  })
+  useEffect(() => {
+    fetchArticles()
+  }, [])
 
-  // Render status badge with appropriate color
-  const renderStatusBadge = (status: string) => {
-    switch (status) {
-      case "published":
-        return <Badge className="bg-green-500">Đã đăng</Badge>
-      case "draft":
-        return <Badge variant="outline" className="text-muted-foreground">Bản nháp</Badge>
-      case "scheduled":
-        return <Badge variant="secondary">Đã lên lịch</Badge>
-      default:
-        return <Badge variant="outline">{status}</Badge>
+  const fetchArticles = async () => {
+    setIsLoading(true)
+    try {
+      const { data, error } = await supabase
+        .from('articles')
+        .select('*')
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        throw error
+      }
+
+      setArticles(data || [])
+    } catch (error) {
+      console.error('Error fetching articles:', error)
+      toast.error('Không thể tải danh sách bài viết. Vui lòng thử lại sau.')
+    } finally {
+      setIsLoading(false)
     }
   }
 
-  // Render category badge with appropriate color
-  const renderCategoryBadge = (category: string) => {
-    switch (category) {
-      case "console":
-        return <Badge className="bg-blue-500">Console</Badge>
-      case "game":
-        return <Badge className="bg-purple-500">Game</Badge>
-      case "review":
-        return <Badge className="bg-amber-500">Review</Badge>
-      case "service":
-        return <Badge className="bg-emerald-500">Dịch vụ</Badge>
-      default:
-        return <Badge variant="outline">{category}</Badge>
+  const handleDeleteArticle = async () => {
+    if (!deleteArticleId) return
+    
+    try {
+      const { error } = await supabase
+        .from('articles')
+        .delete()
+        .eq('id', deleteArticleId)
+
+      if (error) {
+        throw error
+      }
+
+      setArticles(articles.filter(article => article.id !== deleteArticleId))
+      toast.success('Bài viết đã được xóa thành công!')
+    } catch (error) {
+      console.error('Error deleting article:', error)
+      toast.error('Không thể xóa bài viết. Vui lòng thử lại sau.')
+    } finally {
+      setDeleteArticleId(null)
+      setShowDeleteDialog(false)
     }
+  }
+
+  const handlePublishArticle = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('articles')
+        .update({ 
+          status: 'published',
+          publish_date: new Date().toISOString()
+        })
+        .eq('id', id)
+
+      if (error) {
+        throw error
+      }
+
+      // Update the local state
+      setArticles(
+        articles.map(article => 
+          article.id === id 
+            ? { ...article, status: 'published', publish_date: new Date().toISOString() } 
+            : article
+        )
+      )
+
+      toast.success('Bài viết đã được đăng thành công!')
+    } catch (error) {
+      console.error('Error publishing article:', error)
+      toast.error('Không thể đăng bài viết. Vui lòng thử lại sau.')
+    }
+  }
+
+  const filteredArticles = articles.filter(article => 
+    article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (article.summary && article.summary.toLowerCase().includes(searchQuery.toLowerCase()))
+  )
+
+  const renderStatusBadge = (status: string) => {
+    if (status === 'published') {
+      return (
+        <Badge className="bg-green-100 text-green-800 hover:bg-green-200">
+          <FileCheck className="w-3 h-3 mr-1" />
+          Đã đăng
+        </Badge>
+      )
+    }
+    return (
+      <Badge variant="outline" className="bg-yellow-100 text-yellow-800 hover:bg-yellow-200">
+        <Clock className="w-3 h-3 mr-1" />
+        Bản nháp
+      </Badge>
+    )
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-3xl font-bold tracking-tight">Quản lý tin tức</h2>
-        <p className="text-muted-foreground">
-          Tạo, chỉnh sửa và quản lý các bài viết tin tức
-        </p>
+    <div className="w-full">
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Quản lý tin tức</h1>
+          <p className="text-muted-foreground mt-2">
+            Danh sách tất cả các bài viết tin tức, bao gồm cả bản nháp và đã xuất bản.
+          </p>
+        </div>
+        <Button asChild>
+          <Link href="/admin/content/news/create">
+            <PlusCircle className="h-4 w-4 mr-2" />
+            Tạo bài viết mới
+          </Link>
+        </Button>
       </div>
 
-      <Tabs defaultValue="all" className="space-y-4">
-        <div className="flex items-center justify-between">
-          <TabsList className="grid grid-cols-5 w-fit">
-            <TabsTrigger value="all">Tất cả</TabsTrigger>
-            <TabsTrigger value="published">Đã đăng</TabsTrigger>
-            <TabsTrigger value="draft">Bản nháp</TabsTrigger>
-            <TabsTrigger value="scheduled">Đã lên lịch</TabsTrigger>
-            <TabsTrigger value="trash">Thùng rác</TabsTrigger>
-          </TabsList>
-          <Button className="flex items-center gap-1" asChild>
-            <Link href="/admin/content/news/create">
-              <Plus className="h-4 w-4" />
-              <span>Bài viết mới</span>
-            </Link>
-          </Button>
-        </div>
-
-        <div className="flex flex-col md:flex-row gap-3 mb-6">
-          <div className="relative flex-1">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Tìm kiếm theo tiêu đề..."
-              className="pl-8"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          <div className="flex flex-col md:flex-row gap-3">
-            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger className="w-[160px]">
-                <SelectValue placeholder="Danh mục" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tất cả danh mục</SelectItem>
-                <SelectItem value="console">Console</SelectItem>
-                <SelectItem value="game">Game</SelectItem>
-                <SelectItem value="review">Review</SelectItem>
-                <SelectItem value="service">Dịch vụ</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[160px]">
-                <SelectValue placeholder="Trạng thái" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tất cả trạng thái</SelectItem>
-                <SelectItem value="published">Đã đăng</SelectItem>
-                <SelectItem value="draft">Bản nháp</SelectItem>
-                <SelectItem value="scheduled">Đã lên lịch</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button variant="outline" className="flex items-center gap-1 md:w-auto">
-              <Filter className="h-4 w-4" />
-              <span>Lọc khác</span>
-            </Button>
+      <div className="bg-card border rounded-lg">
+        <div className="p-4 border-b">
+          <div className="flex items-center gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Tìm kiếm bài viết..."
+                className="pl-8"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
           </div>
         </div>
 
-        <TabsContent value="all">
-          <Card>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Tiêu đề</TableHead>
-                    <TableHead>Danh mục</TableHead>
-                    <TableHead>Trạng thái</TableHead>
-                    <TableHead>Ngày đăng</TableHead>
-                    <TableHead>Lượt xem</TableHead>
-                    <TableHead className="text-right">Thao tác</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredArticles.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="h-32 text-center">
-                        Không có bài viết nào phù hợp với tìm kiếm
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    filteredArticles.map((article) => (
-                      <TableRow key={article.id}>
-                        <TableCell className="font-medium">
-                          <div className="flex items-center gap-2">
-                            <img 
-                              src={article.image} 
-                              alt={article.title}
-                              className="w-10 h-10 rounded object-cover"
-                            />
-                            <div>
-                              <div className="font-medium line-clamp-1">{article.title}</div>
-                              <div className="text-sm text-muted-foreground">{article.author}</div>
-                            </div>
-                            {article.featured && (
-                              <Badge variant="secondary" className="ml-2">Nổi bật</Badge>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>{renderCategoryBadge(article.category)}</TableCell>
-                        <TableCell>{renderStatusBadge(article.status)}</TableCell>
-                        <TableCell>{article.publishDate || "Chưa đăng"}</TableCell>
-                        <TableCell>{article.views.toLocaleString()}</TableCell>
-                        <TableCell className="text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" className="h-8 w-8 p-0">
-                                <span className="sr-only">Mở menu</span>
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuLabel>Thao tác</DropdownMenuLabel>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem className="flex gap-2 items-center">
-                                <Eye className="h-4 w-4" />
-                                <span>Xem trước</span>
-                              </DropdownMenuItem>
-                              <DropdownMenuItem className="flex gap-2 items-center">
-                                <Edit className="h-4 w-4" />
-                                <span>Chỉnh sửa</span>
-                              </DropdownMenuItem>
-                              {article.status !== "published" && (
-                                <DropdownMenuItem className="flex gap-2 items-center">
-                                  <FileText className="h-4 w-4 text-green-500" />
-                                  <span className="text-green-500">Đăng ngay</span>
-                                </DropdownMenuItem>
-                              )}
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem className="flex gap-2 items-center">
-                                <Trash className="h-4 w-4 text-destructive" />
-                                <span className="text-destructive">Xóa</span>
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        <TabsContent value="published">
-          <Card>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Tiêu đề</TableHead>
-                    <TableHead>Danh mục</TableHead>
-                    <TableHead>Ngày đăng</TableHead>
-                    <TableHead>Lượt xem</TableHead>
-                    <TableHead className="text-right">Thao tác</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredArticles
-                    .filter(article => article.status === "published")
-                    .map((article) => (
-                      <TableRow key={article.id}>
-                        <TableCell className="font-medium">
-                          <div className="flex items-center gap-2">
-                            <img 
-                              src={article.image} 
-                              alt={article.title}
-                              className="w-10 h-10 rounded object-cover"
-                            />
-                            <div>
-                              <div className="font-medium line-clamp-1">{article.title}</div>
-                              <div className="text-sm text-muted-foreground">{article.author}</div>
-                            </div>
-                            {article.featured && (
-                              <Badge variant="secondary" className="ml-2">Nổi bật</Badge>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>{renderCategoryBadge(article.category)}</TableCell>
-                        <TableCell>{article.publishDate}</TableCell>
-                        <TableCell>{article.views.toLocaleString()}</TableCell>
-                        <TableCell className="text-right">
-                          <Button variant="ghost" size="icon">
+        <div className="relative w-full overflow-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[300px]">Tiêu đề</TableHead>
+                <TableHead>Trạng thái</TableHead>
+                <TableHead>Danh mục</TableHead>
+                <TableHead>Ngày tạo</TableHead>
+                <TableHead className="text-right">Thao tác</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-8">
+                    <p className="text-muted-foreground">Đang tải dữ liệu...</p>
+                  </TableCell>
+                </TableRow>
+              ) : filteredArticles.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-8">
+                    <p className="text-muted-foreground">Không có bài viết nào</p>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredArticles.map((article) => (
+                  <TableRow key={article.id}>
+                    <TableCell className="font-medium">
+                      <div className="flex flex-col">
+                        <span className="font-medium">{article.title}</span>
+                        {article.summary && (
+                          <span className="text-xs text-muted-foreground line-clamp-1">
+                            {article.summary}
+                          </span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>{renderStatusBadge(article.status)}</TableCell>
+                    <TableCell>
+                      {article.category ? (
+                        <Badge variant="outline">{article.category}</Badge>
+                      ) : (
+                        <span className="text-muted-foreground text-xs">Không có</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {article.created_at ? (
+                        <span className="text-sm text-muted-foreground">
+                          {formatDistanceToNow(new Date(article.created_at), { 
+                            addSuffix: true,
+                            locale: vi
+                          })}
+                        </span>
+                      ) : (
+                        '-'
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
                             <MoreHorizontal className="h-4 w-4" />
+                            <span className="sr-only">Menu</span>
                           </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        <TabsContent value="draft">
-          <Card>
-            <CardContent className="p-6 text-center">
-              <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-muted">
-                <FileEdit className="h-10 w-10 text-muted-foreground" />
-              </div>
-              <h3 className="mt-4 text-lg font-medium">Các bản nháp</h3>
-              <p className="mb-4 mt-2 text-sm text-muted-foreground">
-                Các bài viết đang ở trạng thái nháp sẽ được hiển thị tại đây
-              </p>
-              {filteredArticles.filter(article => article.status === "draft").length > 0 ? (
-                <div className="mt-4 space-y-2">
-                  {filteredArticles
-                    .filter(article => article.status === "draft")
-                    .map((article) => (
-                      <div key={article.id} className="flex justify-between items-center p-3 border rounded-md">
-                        <div className="flex items-center gap-2">
-                          <img 
-                            src={article.image} 
-                            alt={article.title}
-                            className="w-8 h-8 rounded object-cover"
-                          />
-                          <div className="text-left">
-                            <div className="font-medium">{article.title}</div>
-                            <div className="text-xs text-muted-foreground">{article.author}</div>
-                          </div>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button size="sm" variant="outline">
-                            <Eye className="h-4 w-4 mr-1" /> Xem
-                          </Button>
-                          <Button size="sm">
-                            <Edit className="h-4 w-4 mr-1" /> Chỉnh sửa
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                </div>
-              ) : (
-                <Button className="mt-4" variant="outline">
-                  <Plus className="h-4 w-4 mr-1" /> Tạo bản nháp
-                </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Thao tác</DropdownMenuLabel>
+                          <DropdownMenuItem asChild>
+                            <Link href={`/admin/content/news/edit/${article.id}`}>
+                              <FileEdit className="h-4 w-4 mr-2" />
+                              Chỉnh sửa
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem asChild>
+                            <Link href={`/news/${article.slug}/${article.id}`} target="_blank">
+                              <Eye className="h-4 w-4 mr-2" />
+                              Xem
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          {article.status === 'draft' && (
+                            <DropdownMenuItem onClick={() => handlePublishArticle(article.id)}>
+                              <FileCheck className="h-4 w-4 mr-2" />
+                              Đăng bài
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuItem 
+                            onClick={() => {
+                              setDeleteArticleId(article.id);
+                              setShowDeleteDialog(true);
+                            }}
+                            className="text-red-600 focus:text-red-700"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Xóa
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))
               )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-        <TabsContent value="scheduled">
-          <Card>
-            <CardContent className="p-6 text-center">
-              <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-muted">
-                <Calendar className="h-10 w-10 text-muted-foreground" />
-              </div>
-              <h3 className="mt-4 text-lg font-medium">Các bài viết đã lên lịch</h3>
-              <p className="mb-4 mt-2 text-sm text-muted-foreground">
-                Các bài viết đã lên lịch sẽ tự động đăng vào thời gian đã định
-              </p>
-              {filteredArticles.filter(article => article.status === "scheduled").length > 0 ? (
-                <div className="mt-4 space-y-2">
-                  {filteredArticles
-                    .filter(article => article.status === "scheduled")
-                    .map((article) => (
-                      <div key={article.id} className="flex justify-between items-center p-3 border rounded-md">
-                        <div className="flex items-center gap-2">
-                          <img 
-                            src={article.image} 
-                            alt={article.title}
-                            className="w-8 h-8 rounded object-cover"
-                          />
-                          <div className="text-left">
-                            <div className="font-medium">{article.title}</div>
-                            <div className="text-xs text-muted-foreground">Đăng vào: {article.publishDate}</div>
-                          </div>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button size="sm" variant="outline">
-                            <Eye className="h-4 w-4 mr-1" /> Xem
-                          </Button>
-                          <Button size="sm" variant="destructive">
-                            <Calendar className="h-4 w-4 mr-1" /> Hủy lịch
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                </div>
-              ) : (
-                <Button className="mt-4" variant="outline">
-                  <Calendar className="h-4 w-4 mr-1" /> Lên lịch đăng bài
-                </Button>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Bạn có chắc chắn muốn xóa?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Hành động này không thể hoàn tác. Bài viết sẽ bị xóa vĩnh viễn khỏi hệ thống.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDeleteArticleId(null)}>Hủy</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteArticle} className="bg-red-600 hover:bg-red-700">
+              Xác nhận xóa
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 } 

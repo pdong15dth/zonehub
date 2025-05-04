@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { CKEditor } from '@ckeditor/ckeditor5-react';
 import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
 import { UploadAdapterPlugin } from './upload-adapter';
+import { ImageFromUrlPlugin } from './image-from-url-plugin';
 import { useTheme } from 'next-themes';
 
 interface CKEditorProps {
@@ -70,6 +71,7 @@ const CKEditorField = ({
         'indent',
         '|',
         'imageUpload',
+        'imageFromUrl',
         'blockQuote',
         'insertTable',
         'undo',
@@ -93,7 +95,7 @@ const CKEditorField = ({
       ]
     },
     placeholder: placeholder,
-    extraPlugins: [UploadAdapterPlugin],
+    extraPlugins: [UploadAdapterPlugin, ImageFromUrlPlugin],
   };
 
   // Define styles as a string for the CKEditor
@@ -166,6 +168,11 @@ const CKEditorField = ({
     
     .ck-dark-theme .ck.ck-button.ck-disabled {
       color: #64748b;
+    }
+
+    .ck.ck-editor__top .ck-sticky-panel .ck-sticky-panel__content {
+      border: solid var(--ck-color-base-border);
+      border-width: 1px;
     }
   `;
 

@@ -3,7 +3,8 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, CheckCircle, XCircle, Database } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, Database, RefreshCw, ShieldCheck, ChevronRight } from 'lucide-react';
+import Link from 'next/link';
 
 export default function DBSetupPage() {
   const [loading, setLoading] = useState(false);
@@ -159,54 +160,153 @@ export default function DBSetupPage() {
               </div>
             </div>
           </CardContent>
-          <CardFooter className="flex-col items-start gap-4">
-            <Button 
-              onClick={createArticlesTable}
-              disabled={loading || checkStatus === 'exists'}
-              className="w-full sm:w-auto"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Creating Table...
-                </>
-              ) : (
-                'Create Articles Table'
-              )}
-            </Button>
-            
-            {result && (
-              <div className={`border px-4 py-3 rounded relative ${result.success ? "bg-green-50 border-green-500 text-green-700" : "bg-red-50 border-red-500 text-red-700"}`} role="alert">
-                <div className="flex items-center">
-                  {result.success ? (
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                  ) : (
-                    <XCircle className="h-4 w-4 mr-2" />
-                  )}
-                  <span className="font-medium">{result.message}</span>
-                </div>
-                {result.details && (
-                  <span className="block sm:inline mt-1">{result.details}</span>
+          <CardFooter>
+            <div className="flex flex-col sm:flex-row gap-2 w-full">
+              <Button 
+                className="flex-1" 
+                onClick={createArticlesTable} 
+                disabled={loading || checkStatus === 'exists'}
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creating Table...
+                  </>
+                ) : (
+                  <>
+                    <Database className="mr-2 h-4 w-4" />
+                    Create Articles Table
+                  </>
                 )}
-              </div>
-            )}
-            
-            {!result?.success && checkStatus === 'missing' && (
-              <div className="mt-4">
-                <h3 className="font-medium text-lg mb-2">Manual Setup Instructions</h3>
-                <p className="mb-2">
-                  If automatic creation fails, you can create the table manually:
-                </p>
-                <ol className="list-decimal list-inside space-y-2">
-                  <li>Go to your Supabase dashboard</li>
-                  <li>Navigate to the SQL Editor</li>
-                  <li>Copy the SQL from the scripts/create-articles-table.sql file</li>
-                  <li>Paste it into the SQL Editor and run it</li>
-                </ol>
-              </div>
-            )}
+              </Button>
+              
+              <Button 
+                className="flex-1" 
+                variant="outline" 
+                onClick={checkTableExists}
+                disabled={loading}
+              >
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Check Status
+              </Button>
+              
+              <Button 
+                className="flex-1"
+                variant="secondary"
+                asChild
+              >
+                <Link href="/admin/db-setup/update-article-policies">
+                  <ShieldCheck className="mr-2 h-4 w-4" />
+                  Update RLS Policies
+                </Link>
+              </Button>
+            </div>
           </CardFooter>
         </Card>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>Database Functions</CardTitle>
+            <CardDescription>
+              Manage special database functions needed for some operations
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <p>
+                This will create an <code>exec_sql</code> function in your Supabase database
+                which is needed for some advanced operations like updating policies.
+              </p>
+              
+              <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded text-sm overflow-auto">
+                <pre>
+                  {`CREATE OR REPLACE FUNCTION exec_sql(sql text)
+  RETURNS jsonb
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  AS $$
+  DECLARE
+    result jsonb;
+  BEGIN
+    EXECUTE sql;
+    result := json_build_object('success', true)::jsonb;
+    RETURN result;
+  EXCEPTION WHEN OTHERS THEN
+    result := json_build_object(
+      'success', false,
+      'error', SQLERRM,
+      'code', SQLSTATE
+    )::jsonb;
+    RETURN result;
+  END;
+  $$;`}
+                </pre>
+              </div>
+            </div>
+          </CardContent>
+          <CardFooter>
+            <Button 
+              className="w-full" 
+              onClick={async () => {
+                try {
+                  const response = await fetch('/api/db-setup/create-exec-sql-function', {
+                    method: 'POST',
+                  });
+                  
+                  const data = await response.json();
+                  
+                  if (response.ok && data.success) {
+                    setResult({
+                      success: true,
+                      message: 'Function created successfully!',
+                    });
+                  } else {
+                    setResult({
+                      success: false,
+                      message: data.error || 'Failed to create SQL function',
+                      details: data.details || 'Unknown error'
+                    });
+                  }
+                } catch (error) {
+                  setResult({
+                    success: false,
+                    message: 'An error occurred',
+                    details: error instanceof Error ? error.message : String(error)
+                  });
+                }
+              }}
+            >
+              <Database className="mr-2 h-4 w-4" />
+              Create exec_sql Function
+            </Button>
+          </CardFooter>
+        </Card>
+        
+        <Link href="/admin/db-setup/update-articles-schema">
+          <Card className="hover:bg-muted/50 transition-colors">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Database className="h-5 w-5 text-primary" />
+                Cập nhật bảng Articles
+              </CardTitle>
+              <CardDescription>
+                Thêm các trường mới vào bảng articles để hỗ trợ chức năng theo dõi người tạo/chỉnh sửa
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">
+                Thêm các trường author_id, updated_by, created_at, updated_at, 
+                is_featured, status, publish_date và các chỉ mục cần thiết.
+              </p>
+            </CardContent>
+            <CardFooter className="border-t pt-4">
+              <div className="flex justify-between items-center w-full">
+                <span className="text-xs text-muted-foreground">Phiên bản 1.0</span>
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              </div>
+            </CardFooter>
+          </Card>
+        </Link>
       </div>
     </div>
   );

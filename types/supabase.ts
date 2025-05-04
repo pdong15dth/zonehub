@@ -61,6 +61,56 @@ export interface Database {
           owner_id?: string
         }
       }
+      articles: {
+        Row: {
+          id: string
+          created_at: string
+          updated_at: string
+          title: string
+          slug: string
+          summary: string | null
+          content: string | null
+          cover_image: string | null
+          category: string | null
+          tags: string[] | null
+          is_featured: boolean
+          publish_date: string | null
+          status: 'draft' | 'published'
+          author_id: string | null
+        }
+        Insert: {
+          id?: string
+          created_at?: string
+          updated_at?: string
+          title: string
+          slug: string
+          summary?: string | null
+          content?: string | null
+          cover_image?: string | null
+          category?: string | null
+          tags?: string[] | null
+          is_featured?: boolean
+          publish_date?: string | null
+          status?: 'draft' | 'published'
+          author_id?: string | null
+        }
+        Update: {
+          id?: string
+          created_at?: string
+          updated_at?: string
+          title?: string
+          slug?: string
+          summary?: string | null
+          content?: string | null
+          cover_image?: string | null
+          category?: string | null
+          tags?: string[] | null
+          is_featured?: boolean
+          publish_date?: string | null
+          status?: 'draft' | 'published'
+          author_id?: string | null
+        }
+      }
     }
     Views: {
       [_ in never]: never
