@@ -16,7 +16,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Textarea } from '@/components/ui/textarea';
-import { toast } from 'sonner';
+import { toast } from "@/components/ui/use-toast"
 import { useRouter, useParams } from 'next/navigation';
 import {
   Select,
@@ -230,13 +230,21 @@ export function EditForm({ articleId }: { articleId: string }) {
       }
       
       // Show success message
-      toast.success('Bài viết đã được cập nhật thành công!');
+      toast({
+        title: 'Thành công',
+        description: 'Bài viết đã được cập nhật thành công!',
+        duration: 3000,
+      })
       
       // Redirect to news listing
       router.push('/admin/content/news');
     } catch (error) {
       console.error('Lỗi khi cập nhật bài viết:', error);
-      toast.error('Không thể cập nhật bài viết. Vui lòng thử lại.');
+      toast({
+        title: 'Lỗi',
+        description: 'Không thể cập nhật bài viết. Vui lòng thử lại.',
+        duration: 3000,
+      })
     } finally {
       if (status === 'draft') {
         setIsSavingDraft(false);
@@ -258,12 +266,20 @@ export function EditForm({ articleId }: { articleId: string }) {
     
     // Basic validation for draft - only title and slug are required
     if (!values.title || values.title.length < 5) {
-      toast.error('Tiêu đề phải có ít nhất 5 ký tự');
+      toast({
+        title: 'Lỗi',
+        description: 'Tiêu đề phải có ít nhất 5 ký tự',
+        duration: 3000,
+      })
       return;
     }
     
     if (!values.slug || values.slug.length < 5) {
-      toast.error('Slug phải có ít nhất 5 ký tự');
+      toast({
+        title: 'Lỗi',
+        description: 'Slug phải có ít nhất 5 ký tự',
+        duration: 3000,
+      })
       return;
     }
     

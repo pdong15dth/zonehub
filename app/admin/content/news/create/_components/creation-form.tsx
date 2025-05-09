@@ -16,7 +16,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Textarea } from '@/components/ui/textarea';
-import { toast } from 'sonner';
+import { toast } from "@/components/ui/use-toast"
 import { useRouter } from 'next/navigation';
 import {
   Select,
@@ -30,11 +30,11 @@ import { CalendarIcon, Image, Save, Eye, FileText } from 'lucide-react';
 import { format } from 'date-fns';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
-import { 
-  Tabs, 
-  TabsContent, 
-  TabsList, 
-  TabsTrigger 
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger
 } from '@/components/ui/tabs';
 import {
   Card,
@@ -108,7 +108,7 @@ export function CreationForm() {
   const onTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const title = e.target.value;
     form.setValue('title', title);
-    
+
     // Use the createSlug utility to generate a proper slug
     const slug = createSlug(title);
     form.setValue('slug', slug);
@@ -122,12 +122,12 @@ export function CreationForm() {
       } else {
         setIsSubmitting(true);
       }
-      
+
       // Process tags into an array
-      const tagsArray = values.tags 
-        ? values.tags.split(',').map(tag => tag.trim()).filter(Boolean) 
+      const tagsArray = values.tags
+        ? values.tags.split(',').map(tag => tag.trim()).filter(Boolean)
         : [];
-      
+
       // Prepare article data
       const articleData = {
         id: articleId || uuidv4(),
@@ -143,7 +143,7 @@ export function CreationForm() {
         status: status,
         user_id: user?.id // Include user ID
       };
-      
+
       // Send to API
       const response = await fetch('/api/articles', {
         method: 'POST',
@@ -152,26 +152,38 @@ export function CreationForm() {
         },
         body: JSON.stringify(articleData),
       });
-      
+
       const result = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(result.error || 'Lỗi khi lưu bài viết');
       }
-      
+
       // Store article ID for future updates
       setArticleId(result.id);
-      
+
       // Show success message
       if (status === 'draft') {
-        toast.success('Đã lưu bản nháp thành công!');
+        toast({
+          title: 'Thành công',
+          description: 'Đã lưu bản nháp thành công!',
+          duration: 3000,
+        })
       } else {
-        toast.success('Bài viết đã được đăng thành công!');
+        toast({
+          title: 'Thành công',
+          description: 'Bài viết đã được đăng thành công!',
+          duration: 3000,
+        })
         router.push('/admin/content/news'); // Redirect to news listing only when publishing
       }
     } catch (error) {
       console.error('Lỗi khi lưu bài viết:', error);
-      toast.error(`Không thể ${status === 'draft' ? 'lưu nháp' : 'đăng bài'}. Vui lòng thử lại.`);
+      toast({
+        title: 'Lỗi',
+        description: `Không thể ${status === 'draft' ? 'lưu nháp' : 'đăng bài'}. Vui lòng thử lại.`,
+        duration: 3000,
+      })
     } finally {
       if (status === 'draft') {
         setIsSavingDraft(false);
@@ -185,36 +197,44 @@ export function CreationForm() {
   const onSubmit = async (values: FormValues) => {
     await saveArticle(values, 'published');
   };
-  
+
   // Handle saving as draft
   const handleSaveDraft = async () => {
     // Perform custom validation (lighter than full validation)
     const values = form.getValues();
-    
+
     // Basic validation for draft - only title and slug are required
     if (!values.title || values.title.length < 5) {
-      toast.error('Tiêu đề phải có ít nhất 5 ký tự');
+      toast({
+        title: 'Lỗi',
+        description: 'Tiêu đề phải có ít nhất 5 ký tự',
+        duration: 3000,
+      })
       return;
     }
-    
+
     if (!values.slug || values.slug.length < 5) {
-      toast.error('Slug phải có ít nhất 5 ký tự');
+      toast({
+        title: 'Lỗi',
+        description: 'Slug phải có ít nhất 5 ký tự',
+        duration: 3000,
+      })
       return;
     }
-    
+
     await saveArticle(values, 'draft');
   };
 
   const renderPreview = () => {
     const values = form.getValues();
     const formattedDate = values.publish_date ? format(values.publish_date, 'dd/MM/yyyy') : 'Chưa xác định';
-    
+
     return (
       <div className="space-y-8">
         <div className="aspect-video w-full max-h-[400px] rounded-xl overflow-hidden bg-muted">
           {values.cover_image ? (
-            <img 
-              src={values.cover_image} 
+            <img
+              src={values.cover_image}
               alt={values.title}
               className="w-full h-full object-cover"
             />
@@ -224,7 +244,7 @@ export function CreationForm() {
             </div>
           )}
         </div>
-        
+
         <div className="space-y-2">
           <div className="flex gap-2">
             {values.category && (
@@ -241,14 +261,14 @@ export function CreationForm() {
               {formattedDate}
             </span>
           </div>
-          
+
           <h1 className="text-3xl font-bold">{values.title || 'Tiêu đề bài viết'}</h1>
-          
+
           <p className="text-muted-foreground text-sm pb-4 border-b">
             {values.summary || 'Tóm tắt bài viết sẽ hiển thị ở đây.'}
           </p>
         </div>
-        
+
         <div className="prose prose-sm sm:prose lg:prose-lg max-w-none">
           {values.content ? (
             <div dangerouslySetInnerHTML={{ __html: values.content }} />
@@ -256,7 +276,7 @@ export function CreationForm() {
             <p className="text-muted-foreground">Nội dung bài viết sẽ hiển thị ở đây.</p>
           )}
         </div>
-        
+
         {values.tags && (
           <div className="pt-4 border-t">
             <span className="text-sm font-medium">Thẻ:</span>
@@ -289,18 +309,18 @@ export function CreationForm() {
                   Xem trước
                 </TabsTrigger>
               </TabsList>
-              
+
               <div className="flex items-center gap-2">
-                <Button 
-                  type="button" 
+                <Button
+                  type="button"
                   variant="outline"
                   onClick={() => router.push('/admin/content/news')}
                   size="sm"
                 >
                   Hủy
                 </Button>
-                <Button 
-                  type="button" 
+                <Button
+                  type="button"
                   variant="secondary"
                   onClick={handleSaveDraft}
                   disabled={isSavingDraft}
@@ -309,8 +329,8 @@ export function CreationForm() {
                   <Save className="h-4 w-4 mr-2" />
                   {isSavingDraft ? 'Đang lưu...' : 'Lưu nháp'}
                 </Button>
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
                   disabled={isSubmitting}
                   size="sm"
                   className="bg-primary"
@@ -320,7 +340,7 @@ export function CreationForm() {
                 </Button>
               </div>
             </div>
-            
+
             <TabsContent value="edit" className="mt-6">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Left Card - Main Content */}
@@ -339,9 +359,9 @@ export function CreationForm() {
                             <FormItem>
                               <FormLabel className="font-medium">Tiêu đề <span className="text-red-500">*</span></FormLabel>
                               <FormControl>
-                                <Input 
-                                  placeholder="Nhập tiêu đề bài viết" 
-                                  {...field} 
+                                <Input
+                                  placeholder="Nhập tiêu đề bài viết"
+                                  {...field}
                                   onChange={onTitleChange}
                                   className="h-10"
                                 />
@@ -353,7 +373,7 @@ export function CreationForm() {
                             </FormItem>
                           )}
                         />
-                        
+
                         <FormField
                           control={form.control}
                           name="slug"
@@ -361,9 +381,9 @@ export function CreationForm() {
                             <FormItem>
                               <FormLabel className="font-medium">Slug <span className="text-red-500">*</span></FormLabel>
                               <FormControl>
-                                <Input 
-                                  placeholder="ten-bai-viet" 
-                                  {...field} 
+                                <Input
+                                  placeholder="ten-bai-viet"
+                                  {...field}
                                   className="h-10"
                                 />
                               </FormControl>
@@ -375,7 +395,7 @@ export function CreationForm() {
                           )}
                         />
                       </div>
-                      
+
                       <FormField
                         control={form.control}
                         name="summary"
@@ -383,10 +403,10 @@ export function CreationForm() {
                           <FormItem>
                             <FormLabel className="font-medium">Tóm tắt <span className="text-red-500">*</span></FormLabel>
                             <FormControl>
-                              <Textarea 
-                                placeholder="Mô tả ngắn gọn về bài viết" 
-                                className="resize-none min-h-24" 
-                                {...field} 
+                              <Textarea
+                                placeholder="Mô tả ngắn gọn về bài viết"
+                                className="resize-none min-h-24"
+                                {...field}
                               />
                             </FormControl>
                             <FormDescription>
@@ -396,7 +416,7 @@ export function CreationForm() {
                           </FormItem>
                         )}
                       />
-                      
+
                       <div>
                         <FormLabel className="font-medium">Nội dung <span className="text-red-500">*</span></FormLabel>
                         <div className="mt-2">
@@ -416,7 +436,7 @@ export function CreationForm() {
                     </CardContent>
                   </Card>
                 </div>
-                
+
                 {/* Right Card - Settings */}
                 <div className="lg:col-span-1">
                   <Card>
@@ -432,9 +452,9 @@ export function CreationForm() {
                           <FormItem>
                             <FormLabel className="font-medium">URL ảnh bìa <span className="text-red-500">*</span></FormLabel>
                             <FormControl>
-                              <Input 
-                                placeholder="https://example.com/image.jpg" 
-                                {...field} 
+                              <Input
+                                placeholder="https://example.com/image.jpg"
+                                {...field}
                                 className="h-10"
                               />
                             </FormControl>
@@ -444,10 +464,10 @@ export function CreationForm() {
                             <FormMessage />
                             <div className="mt-2 aspect-video rounded-md overflow-hidden bg-muted">
                               {field.value ? (
-                                <img 
-                                  src={field.value} 
+                                <img
+                                  src={field.value}
                                   alt="Cover image preview"
-                                  className="w-full h-full object-cover" 
+                                  className="w-full h-full object-cover"
                                 />
                               ) : (
                                 <div className="w-full h-full flex items-center justify-center">
@@ -458,7 +478,7 @@ export function CreationForm() {
                           </FormItem>
                         )}
                       />
-                      
+
                       <FormField
                         control={form.control}
                         name="category"
@@ -486,7 +506,7 @@ export function CreationForm() {
                           </FormItem>
                         )}
                       />
-                      
+
                       <FormField
                         control={form.control}
                         name="tags"
@@ -494,9 +514,9 @@ export function CreationForm() {
                           <FormItem>
                             <FormLabel className="font-medium">Thẻ</FormLabel>
                             <FormControl>
-                              <Input 
-                                placeholder="tag1, tag2, tag3" 
-                                {...field} 
+                              <Input
+                                placeholder="tag1, tag2, tag3"
+                                {...field}
                                 className="h-10"
                               />
                             </FormControl>
@@ -507,7 +527,7 @@ export function CreationForm() {
                           </FormItem>
                         )}
                       />
-                      
+
                       <FormField
                         control={form.control}
                         name="publish_date"
@@ -549,7 +569,7 @@ export function CreationForm() {
                           </FormItem>
                         )}
                       />
-                      
+
                       <FormField
                         control={form.control}
                         name="is_featured"
@@ -588,7 +608,7 @@ export function CreationForm() {
                 </div>
               </div>
             </TabsContent>
-            
+
             <TabsContent value="preview" className="mt-6">
               <Card>
                 <CardContent className="pt-6">

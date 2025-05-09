@@ -28,7 +28,7 @@ export function ArticleActions({ articleId, initialLikes }: ArticleActionsProps)
   const handleLike = async () => {
     setLiked(!liked)
     setLikeCount(prev => liked ? prev - 1 : prev + 1)
-    
+
     // In a real app, you would call an API to update likes
     try {
       // Example API call (commented out)
@@ -45,19 +45,21 @@ export function ArticleActions({ articleId, initialLikes }: ArticleActionsProps)
         title: "Đã xảy ra lỗi",
         description: "Không thể cập nhật lượt thích, vui lòng thử lại sau.",
         variant: "destructive",
+        duration: 3000,
       })
     }
   }
 
   const handleBookmark = async () => {
     setBookmarked(!bookmarked)
-    
+
     // In a real app, you would call an API to save bookmark
     toast({
       title: bookmarked ? "Đã bỏ lưu bài viết" : "Đã lưu bài viết",
-      description: bookmarked 
-        ? "Bài viết đã được xóa khỏi danh sách đã lưu." 
+      description: bookmarked
+        ? "Bài viết đã được xóa khỏi danh sách đã lưu."
         : "Bài viết đã được thêm vào danh sách đã lưu.",
+      duration: 3000,
     })
   }
 
@@ -65,28 +67,29 @@ export function ArticleActions({ articleId, initialLikes }: ArticleActionsProps)
     navigator.clipboard.writeText(window.location.href)
     setCopySuccess(true)
     setTimeout(() => setCopySuccess(false), 2000)
-    
+
     toast({
       title: "Đã sao chép",
       description: "Đường dẫn đã được sao chép vào clipboard.",
+      duration: 3000,
     })
   }
 
   return (
     <div className="flex justify-between items-center border-t border-b py-4">
       <div className="flex items-center gap-4">
-        <Button 
+        <Button
           variant={liked ? "default" : "outline"}
-          size="sm" 
+          size="sm"
           className="flex items-center gap-1"
           onClick={handleLike}
         >
           <ThumbsUp className="h-4 w-4" />
           <span>{likeCount} thích</span>
         </Button>
-        <Button 
+        <Button
           variant={bookmarked ? "default" : "outline"}
-          size="sm" 
+          size="sm"
           className="flex items-center gap-1"
           onClick={handleBookmark}
         >
@@ -99,7 +102,7 @@ export function ArticleActions({ articleId, initialLikes }: ArticleActionsProps)
           {copySuccess ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
         </Button>
         <Button variant="outline" size="icon" asChild>
-          <a 
+          <a
             href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`}
             target="_blank"
             rel="noopener noreferrer"
@@ -109,7 +112,7 @@ export function ArticleActions({ articleId, initialLikes }: ArticleActionsProps)
           </a>
         </Button>
         <Button variant="outline" size="icon" asChild>
-          <a 
+          <a
             href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(window.location.href)}`}
             target="_blank"
             rel="noopener noreferrer"
@@ -119,7 +122,7 @@ export function ArticleActions({ articleId, initialLikes }: ArticleActionsProps)
           </a>
         </Button>
         <Button variant="outline" size="icon" asChild>
-          <a 
+          <a
             href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.href)}`}
             target="_blank"
             rel="noopener noreferrer"

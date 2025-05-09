@@ -63,12 +63,15 @@ import {
   Loader2,
   Globe,
   Youtube,
-  FileText
+  FileText,
+  PlusCircle,
+  MoreVertical,
 } from "lucide-react"
 import { createBrowserSupabaseClient } from "@/lib/supabase"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { toast } from "@/components/ui/use-toast"
+import { GameDetailModal } from "./_components/game-detail-modal"
 
 // Game interface
 interface Game {
@@ -89,6 +92,7 @@ interface Game {
   status: 'draft' | 'published'
   featured: boolean
   image: string | null
+  images: string[] | null
   created_by: string | null
   updated_by: string | null
   author_id: string | null
@@ -108,67 +112,70 @@ export default function GamesPage() {
   const [totalGames, setTotalGames] = useState(0)
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
   const [selectedGame, setSelectedGame] = useState<Game | null>(null)
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false)
   const gamesPerPage = 10
 
   // Fetch games from Supabase
   useEffect(() => {
-    const fetchGames = async () => {
-      try {
-        setIsLoading(true)
-        setError(null)
-        const supabase = createBrowserSupabaseClient()
-        
-        // Get count of games for pagination
-        const { count, error: countError } = await supabase
-          .from('games')
-          .select('*', { count: 'exact', head: true })
-        
-        if (countError) throw countError
-        
-        setTotalGames(count || 0)
-        
-        // Fetch games with pagination
-        const from = (currentPage - 1) * gamesPerPage
-        const to = from + gamesPerPage - 1
-        
-        const { data, error } = await supabase
-          .from('games')
-          .select('*')
-          .order('created_at', { ascending: false })
-          .range(from, to)
-        
-        if (error) throw error
-        
-        if (data) {
-          setGames(data as Game[])
-          toast({
-            title: "Dữ liệu đã được tải",
-            description: `Đã tải ${data.length} game thành công`,
-          })
-        }
-      } catch (err: any) {
-        console.error('Error fetching games:', err)
-        setError(err.message || 'Failed to load games')
-        toast({
-          title: "Lỗi",
-          description: `Không thể tải danh sách games: ${err.message}`,
-          variant: "destructive",
-        })
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
+    console.log('Fetching games for page:', currentPage)
     fetchGames()
   }, [currentPage])
 
+  const fetchGames = async () => {
+    try {
+      setIsLoading(true)
+      setError(null)
+      const supabase = createBrowserSupabaseClient()
+
+      // Get count of games for pagination
+      const { count, error: countError } = await supabase
+        .from('games')
+        .select('*', { count: 'exact', head: true })
+
+      if (countError) throw countError
+
+      setTotalGames(count || 0)
+
+      // Fetch games with pagination
+      const from = (currentPage - 1) * gamesPerPage
+      const to = from + gamesPerPage - 1
+
+      const { data, error } = await supabase
+        .from('games')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .range(from, to)
+
+      if (error) throw error
+
+      if (data) {
+        setGames(data as Game[])
+        toast({
+          title: "Dữ liệu đã được tải",
+          description: `Đã tải ${data.length} game thành công`,
+          duration: 3000,
+        })
+      }
+    } catch (err: any) {
+      console.error('Error fetching games:', err)
+      setError(err.message || 'Failed to load games')
+      toast({
+        title: "Lỗi",
+        description: `Không thể tải danh sách games: ${err.message}`,
+        variant: "destructive",
+        duration: 5000,
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
   // Filter games based on search and filters
   const filteredGames = games.filter(game => {
-    const matchesSearch = game.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          game.developer.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesSearch = game.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      game.developer.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesGenre = genreFilter === "all" || game.genre.includes(genreFilter)
     const matchesPlatform = platformFilter === "all" || game.platform.includes(platformFilter)
-    
+
     return matchesSearch && matchesGenre && matchesPlatform
   })
 
@@ -182,7 +189,7 @@ export default function GamesPage() {
         {platforms.map(platform => {
           let badgeClass = ""
           let label = ""
-          
+
           switch (platform) {
             case "ps5":
               badgeClass = "bg-blue-900"
@@ -212,7 +219,7 @@ export default function GamesPage() {
               badgeClass = "bg-gray-500"
               label = platform
           }
-          
+
           return (
             <Badge key={platform} className={badgeClass}>{label}</Badge>
           )
@@ -228,7 +235,7 @@ export default function GamesPage() {
         {genres.map(genre => {
           let badgeClass = ""
           let label = ""
-          
+
           switch (genre) {
             case "action":
               badgeClass = "bg-red-600"
@@ -254,7 +261,7 @@ export default function GamesPage() {
               badgeClass = "bg-gray-500"
               label = genre
           }
-          
+
           return (
             <Badge key={genre} className={badgeClass}>{label}</Badge>
           )
@@ -267,19 +274,20 @@ export default function GamesPage() {
   const handleDeleteGame = async (id: string, title: string) => {
     try {
       const supabase = createBrowserSupabaseClient()
-      
+
       const { error } = await supabase
         .from('games')
         .delete()
         .eq('id', id)
-      
+
       if (error) throw error
-      
+
       // Update local state after successful delete
       setGames(games.filter(game => game.id !== id))
       toast({
         title: "Xóa thành công",
         description: `Game "${title}" đã được xóa khỏi hệ thống`,
+        duration: 3000,
       })
     } catch (err: any) {
       console.error('Error deleting game:', err)
@@ -287,6 +295,7 @@ export default function GamesPage() {
         title: "Lỗi khi xóa",
         description: `Không thể xóa game: ${err.message}`,
         variant: "destructive",
+        duration: 3000,
       })
     }
   }
@@ -295,20 +304,21 @@ export default function GamesPage() {
   const toggleFeaturedStatus = async (game: Game) => {
     try {
       const supabase = createBrowserSupabaseClient()
-      
+
       const { error } = await supabase
         .from('games')
         .update({ featured: !game.featured })
         .eq('id', game.id)
-      
+
       if (error) throw error
-      
+
       // Update local state after successful update
       setGames(games.map(g => g.id === game.id ? { ...g, featured: !game.featured } : g))
-      
+
       toast({
         title: game.featured ? "Đã bỏ nổi bật" : "Đã đánh dấu nổi bật",
         description: `Game "${game.title}" ${game.featured ? "đã bỏ đánh dấu nổi bật" : "đã được đánh dấu nổi bật"}`,
+        duration: 3000,
       })
     } catch (err: any) {
       console.error('Error toggling featured status:', err)
@@ -316,6 +326,7 @@ export default function GamesPage() {
         title: "Lỗi cập nhật",
         description: `Không thể cập nhật trạng thái nổi bật: ${err.message}`,
         variant: "destructive",
+        duration: 3000,
       })
     }
   }
@@ -328,11 +339,17 @@ export default function GamesPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-3xl font-bold tracking-tight">Quản lý Games</h2>
-        <p className="text-muted-foreground">
-          Quản lý thông tin game và thống kê số liệu
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">Quản lý Games</h2>
+          <p className="text-muted-foreground">
+            Quản lý thông tin game và thông kê số liệu
+          </p>
+        </div>
+        <Button onClick={() => router.push('/admin/content/games/create')}>
+          <PlusCircle className="mr-2 h-4 w-4" />
+          Thêm game
+        </Button>
       </div>
 
       <div className="flex flex-col md:flex-row gap-3 mb-6">
@@ -373,13 +390,6 @@ export default function GamesPage() {
               <SelectItem value="switch">Nintendo Switch</SelectItem>
             </SelectContent>
           </Select>
-          <Button 
-            className="flex items-center gap-1"
-            onClick={() => router.push('/admin/content/games/create/edit')}
-          >
-            <Plus className="h-4 w-4" />
-            <span>Thêm game</span>
-          </Button>
         </div>
       </div>
 
@@ -419,8 +429,8 @@ export default function GamesPage() {
                     <TableRow key={game.id}>
                       <TableCell className="font-medium">
                         <div className="flex items-center gap-2">
-                          <img 
-                            src={game.image || "/placeholder.svg"} 
+                          <img
+                            src={game.image || "/placeholder.svg"}
                             alt={game.title}
                             className="w-10 h-10 rounded object-cover"
                           />
@@ -448,27 +458,25 @@ export default function GamesPage() {
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" className="h-8 w-8 p-0">
                               <span className="sr-only">Mở menu</span>
-                              <MoreHorizontal className="h-4 w-4" />
+                              <MoreVertical className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Thao tác</DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem 
+                            <DropdownMenuItem
                               className="flex gap-2 items-center"
                               onClick={() => handleViewGame(game)}
                             >
                               <Eye className="h-4 w-4" />
                               <span>Xem chi tiết</span>
                             </DropdownMenuItem>
-                            <DropdownMenuItem 
+                            <DropdownMenuItem
                               className="flex gap-2 items-center"
                               onClick={() => router.push(`/admin/content/games/${game.id}/edit`)}
                             >
                               <Edit className="h-4 w-4" />
                               <span>Chỉnh sửa</span>
                             </DropdownMenuItem>
-                            <DropdownMenuItem 
+                            <DropdownMenuItem
                               className="flex gap-2 items-center"
                               onClick={() => toggleFeaturedStatus(game)}
                             >
@@ -481,7 +489,7 @@ export default function GamesPage() {
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             {game.official_website && (
-                              <DropdownMenuItem 
+                              <DropdownMenuItem
                                 className="flex gap-2 items-center"
                                 onClick={() => window.open(game.official_website as string, '_blank')}
                               >
@@ -490,7 +498,7 @@ export default function GamesPage() {
                               </DropdownMenuItem>
                             )}
                             {game.trailer_url && (
-                              <DropdownMenuItem 
+                              <DropdownMenuItem
                                 className="flex gap-2 items-center"
                                 onClick={() => window.open(game.trailer_url as string, '_blank')}
                               >
@@ -503,7 +511,7 @@ export default function GamesPage() {
                               <span className="text-green-500">Tải về ({game.downloads.toLocaleString()})</span>
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem 
+                            <DropdownMenuItem
                               className="flex gap-2 items-center"
                               onClick={() => {
                                 if (window.confirm(`Bạn có chắc muốn xóa game "${game.title}"?`)) {
@@ -531,8 +539,8 @@ export default function GamesPage() {
           Hiển thị <strong>{filteredGames.length}</strong> trên tổng số <strong>{totalGames}</strong> game
         </p>
         <div className="flex gap-2">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             size="sm"
             disabled={currentPage <= 1}
             onClick={() => {
@@ -540,13 +548,14 @@ export default function GamesPage() {
               toast({
                 title: "Đang chuyển trang",
                 description: `Đang tải trang ${currentPage - 1}`,
+                duration: 3000,
               })
             }}
           >
             Trang trước
           </Button>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             size="sm"
             disabled={currentPage >= totalPages}
             onClick={() => {
@@ -554,6 +563,7 @@ export default function GamesPage() {
               toast({
                 title: "Đang chuyển trang",
                 description: `Đang tải trang ${currentPage + 1}`,
+                duration: 3000,
               })
             }}
           >
@@ -563,150 +573,11 @@ export default function GamesPage() {
       </div>
 
       {/* Game Detail Dialog */}
-      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          {selectedGame && (
-            <>
-              <DialogHeader>
-                <div className="flex items-center gap-3">
-                  <img 
-                    src={selectedGame.image || "/placeholder.svg"} 
-                    alt={selectedGame.title}
-                    className="w-16 h-16 rounded object-cover"
-                  />
-                  <div>
-                    <DialogTitle className="text-xl">{selectedGame.title}</DialogTitle>
-                    <p className="text-muted-foreground">{selectedGame.developer}</p>
-                  </div>
-                </div>
-              </DialogHeader>
-              
-              <Tabs defaultValue="details" className="mt-4">
-                <TabsList className="grid grid-cols-3">
-                  <TabsTrigger value="details">Chi tiết</TabsTrigger>
-                  <TabsTrigger value="content">Nội dung</TabsTrigger>
-                  <TabsTrigger value="requirements">Yêu cầu hệ thống</TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="details" className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                    <div>
-                      <h4 className="font-medium text-sm">Nhà phát hành</h4>
-                      <p>{selectedGame.publisher}</p>
-                    </div>
-                    <div>
-                      <h4 className="font-medium text-sm">Ngày phát hành</h4>
-                      <p>{selectedGame.release_date}</p>
-                    </div>
-                    <div>
-                      <h4 className="font-medium text-sm">Nền tảng</h4>
-                      <div className="mt-1">{renderPlatformBadges(selectedGame.platform)}</div>
-                    </div>
-                    <div>
-                      <h4 className="font-medium text-sm">Thể loại</h4>
-                      <div className="mt-1">{renderGenreBadges(selectedGame.genre)}</div>
-                    </div>
-                    <div>
-                      <h4 className="font-medium text-sm">Đánh giá</h4>
-                      <div className="flex items-center">
-                        <Star className="h-4 w-4 text-yellow-500 mr-1" />
-                        <span>{selectedGame.rating}</span>
-                      </div>
-                    </div>
-                    <div>
-                      <h4 className="font-medium text-sm">Lượt tải</h4>
-                      <p>{selectedGame.downloads.toLocaleString()}</p>
-                    </div>
-                    <div>
-                      <h4 className="font-medium text-sm">Trạng thái</h4>
-                      <Badge variant={selectedGame.status === 'published' ? 'default' : 'secondary'}>
-                        {selectedGame.status === 'published' ? 'Đã xuất bản' : 'Bản nháp'}
-                      </Badge>
-                    </div>
-                    <div>
-                      <h4 className="font-medium text-sm">Nổi bật</h4>
-                      <Badge variant={selectedGame.featured ? 'default' : 'outline'}>
-                        {selectedGame.featured ? 'Có' : 'Không'}
-                      </Badge>
-                    </div>
-                  </div>
-                  
-                  <div className="mt-4">
-                    <h4 className="font-medium text-sm mb-1">Mô tả</h4>
-                    <p className="text-sm text-muted-foreground whitespace-pre-line">
-                      {selectedGame.description || "Không có mô tả."}
-                    </p>
-                  </div>
-                  
-                  <div className="flex flex-col md:flex-row gap-4 mt-4">
-                    {selectedGame.official_website && (
-                      <Button 
-                        variant="outline" 
-                        className="flex items-center gap-2"
-                        onClick={() => window.open(selectedGame.official_website as string, '_blank')}
-                      >
-                        <Globe className="h-4 w-4" />
-                        <span>Website chính thức</span>
-                      </Button>
-                    )}
-                    {selectedGame.trailer_url && (
-                      <Button 
-                        variant="outline" 
-                        className="flex items-center gap-2"
-                        onClick={() => window.open(selectedGame.trailer_url as string, '_blank')}
-                      >
-                        <Youtube className="h-4 w-4" />
-                        <span>Xem trailer</span>
-                      </Button>
-                    )}
-                  </div>
-                </TabsContent>
-                
-                <TabsContent value="content">
-                  <div className="mt-4">
-                    <h4 className="font-medium text-sm mb-1">Nội dung chi tiết</h4>
-                    <div className="text-sm text-muted-foreground mt-2 whitespace-pre-line">
-                      {selectedGame.content || "Không có nội dung chi tiết."}
-                    </div>
-                  </div>
-                </TabsContent>
-                
-                <TabsContent value="requirements">
-                  <div className="mt-4">
-                    <h4 className="font-medium text-sm mb-1">Yêu cầu hệ thống</h4>
-                    <div className="text-sm text-muted-foreground mt-2 whitespace-pre-line">
-                      {selectedGame.system_requirements || "Không có thông tin yêu cầu hệ thống."}
-                    </div>
-                  </div>
-                </TabsContent>
-              </Tabs>
-              
-              <DialogFooter className="flex justify-between mt-6">
-                <div className="text-xs text-muted-foreground">
-                  Tạo lúc: {new Date(selectedGame.created_at).toLocaleString()}
-                  {selectedGame.updated_at && ` · Cập nhật lúc: ${new Date(selectedGame.updated_at).toLocaleString()}`}
-                </div>
-                <div className="flex gap-2">
-                  <Button 
-                    variant="outline"
-                    onClick={() => setIsViewDialogOpen(false)}
-                  >
-                    Đóng
-                  </Button>
-                  <Button
-                    onClick={() => {
-                      setIsViewDialogOpen(false)
-                      router.push(`/admin/content/games/${selectedGame.id}/edit`)
-                    }}
-                  >
-                    Chỉnh sửa
-                  </Button>
-                </div>
-              </DialogFooter>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
+      <GameDetailModal
+        isOpen={isViewDialogOpen}
+        onClose={() => setIsViewDialogOpen(false)}
+        game={selectedGame}
+      />
     </div>
   )
 } 

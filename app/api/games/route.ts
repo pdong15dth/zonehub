@@ -48,6 +48,16 @@ const gameSchema = z.object({
   rating: z.number().min(0).max(5).default(0),
   featured: z.boolean().default(false),
   image: z.string().default("/placeholder.svg"),
+  images: z.array(z.string()).optional(),
+  gameImages: z.array(
+    z.object({
+      id: z.string().optional(),
+      url: z.string(),
+      caption: z.string().optional().nullable(),
+      is_primary: z.boolean().optional(),
+      display_order: z.number().optional(),
+    })
+  ).optional(),
   author_id: z.string().optional(),
 })
 
@@ -93,6 +103,12 @@ export async function POST(request: Request) {
     }
 
     const gameData = validationResult.data
+    
+    // Extract gameImages data
+    const gameImagesData = gameData.gameImages || []
+    
+    // Find primary image for the main image field
+    const primaryImage = gameImagesData.find(img => img.is_primary)?.url || gameData.image || "/placeholder.svg"
 
     // Prepare game data with creator info
     const gameRecord = {
@@ -110,7 +126,8 @@ export async function POST(request: Request) {
       rating: gameData.rating,
       downloads: 0, // Initialize downloads count
       featured: gameData.featured,
-      image: gameData.image,
+      image: primaryImage,
+      gameImages: gameImagesData,
       status: "published", // Default status
       created_by: userId,
       updated_by: userId,
@@ -159,40 +176,42 @@ export async function PUT(request: Request) {
   try {
     // Initialize Supabase
     const supabase = createServerSupabaseClient()
-
+    
     // Get current user profile
     const user = await getCurrentUserProfile()
     console.log("Current user profile:", user)
-
+    
     if (!user) {
       return NextResponse.json(
         { error: "Unauthorized access" },
         { status: 401 }
       )
     }
-
-    // Verify admin role
-    if (user.role !== "admin") {
+    
+    // Verify admin or editor role
+    if (user.role !== "admin" && user.role !== "editor") {
       return NextResponse.json(
         { error: "Insufficient permissions" },
         { status: 403 }
       )
     }
-
-    // Parse request body
-    const body = await request.json()
-
-    // Check if game ID is provided
-    if (!body.id) {
+    
+    // Get request data
+    const requestData = await request.json()
+    
+    // Get game ID from the request data
+    const gameId = requestData.id
+    
+    if (!gameId) {
       return NextResponse.json(
-        { error: "Game ID is required for updates" },
+        { error: "Game ID is required" },
         { status: 400 }
       )
     }
-
-    // Validate the request body
-    const validationResult = gameSchema.safeParse(body)
-
+    
+    // Parse and validate request body
+    const validationResult = gameSchema.safeParse(requestData)
+    
     if (!validationResult.success) {
       return NextResponse.json(
         {
@@ -202,11 +221,17 @@ export async function PUT(request: Request) {
         { status: 400 }
       )
     }
-
+    
     const gameData = validationResult.data
-
-    // Prepare game data for update
-    const gameRecord = {
+    
+    // Extract gameImages data
+    const gameImagesData = gameData.gameImages || []
+    
+    // Find primary image for the main image field
+    const primaryImage = gameImagesData.find(img => img.is_primary)?.url || gameData.image || "/placeholder.svg"
+    
+    // Prepare update data
+    const updateData = {
       title: gameData.title,
       developer: gameData.developer,
       publisher: gameData.publisher,
@@ -220,20 +245,20 @@ export async function PUT(request: Request) {
       genre: gameData.genre,
       rating: gameData.rating,
       featured: gameData.featured,
-      image: gameData.image,
-      updated_at: new Date().toISOString(),
+      image: primaryImage,
+      gameImages: gameImagesData,
       updated_by: user.id,
-      author_id: gameData.author_id || user.id // Use provided author_id or default to updater
+      updated_at: new Date().toISOString()
     }
-
-    // Update game record in Supabase
+    
+    // Update game record
     const { data, error } = await supabase
       .from('games')
-      .update(gameRecord)
-      .eq('id', body.id)
+      .update(updateData)
+      .eq('id', gameId)
       .select()
       .single()
-
+    
     if (error) {
       console.error("Supabase error:", error)
       return NextResponse.json(
@@ -241,15 +266,12 @@ export async function PUT(request: Request) {
         { status: 500 }
       )
     }
-
-    return NextResponse.json(
-      {
-        message: "Game updated successfully",
-        game: data
-      },
-      { status: 200 }
-    )
-
+    
+    return NextResponse.json({
+      message: "Game updated successfully",
+      game: data
+    })
+    
   } catch (error) {
     console.error("Error updating game:", error)
     return NextResponse.json(

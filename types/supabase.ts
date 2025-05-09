@@ -54,6 +54,14 @@ export interface Database {
           status: 'draft' | 'published'
           featured: boolean
           image: string | null
+          images: string[] | null
+          gameImages: {
+            id?: string
+            url: string
+            caption?: string | null
+            is_primary?: boolean
+            display_order?: number
+          }[] | null
           created_by: string | null
           updated_by: string | null
           author_id: string | null
@@ -78,6 +86,14 @@ export interface Database {
           status?: 'draft' | 'published'
           featured?: boolean
           image?: string | null
+          images?: string[] | null
+          gameImages?: {
+            id?: string
+            url: string
+            caption?: string | null
+            is_primary?: boolean
+            display_order?: number
+          }[] | null
           created_by?: string | null
           updated_by?: string | null
           author_id?: string | null
@@ -102,11 +118,48 @@ export interface Database {
           status?: 'draft' | 'published'
           featured?: boolean
           image?: string | null
+          images?: string[] | null
+          gameImages?: {
+            id?: string
+            url: string
+            caption?: string | null
+            is_primary?: boolean
+            display_order?: number
+          }[] | null
           created_by?: string | null
           updated_by?: string | null
           author_id?: string | null
           created_at?: string
           updated_at?: string | null
+        }
+      }
+      game_images: {
+        Row: {
+          id: string
+          game_id: string
+          url: string
+          caption: string | null
+          is_primary: boolean
+          display_order: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          game_id: string
+          url: string
+          caption?: string | null
+          is_primary?: boolean
+          display_order?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          game_id?: string
+          url?: string
+          caption?: string | null
+          is_primary?: boolean
+          display_order?: number
+          created_at?: string
         }
       }
       zones: {

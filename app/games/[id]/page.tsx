@@ -38,6 +38,7 @@ import {
 import { MainNav } from "@/components/main-nav"
 import { ModeToggle } from "@/components/mode-toggle"
 import { UserNav } from "@/components/user-nav"
+import { ImageGallery } from "@/components/games/image-gallery"
 
 // Mock game data
 const games = [
@@ -436,30 +437,20 @@ export default function GameDetailPage() {
           {/* Screenshots */}
           <div className="space-y-4">
             <h2 className="text-2xl font-bold">Screenshots</h2>
-            <div className="aspect-video w-full overflow-hidden rounded-lg">
-              <img 
-                src={game.screenshots[activeScreenshot]} 
-                alt={`${game.title} screenshot ${activeScreenshot + 1}`}
-                className="w-full h-full object-cover"
+            {game.screenshots && game.screenshots.length > 0 ? (
+              <ImageGallery
+                images={game.screenshots.map((url: string) => ({ url }))}
+                aspectRatio="video"
               />
-            </div>
-            <div className="grid grid-cols-4 gap-2">
-              {game.screenshots.map((screenshot: string, index: number) => (
-                <div 
-                  key={index}
-                  className={`aspect-video overflow-hidden rounded-md cursor-pointer border-2 ${
-                    activeScreenshot === index ? 'border-primary' : 'border-transparent'
-                  }`}
-                  onClick={() => setActiveScreenshot(index)}
-                >
-                  <img 
-                    src={screenshot} 
-                    alt={`${game.title} thumbnail ${index + 1}`}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              ))}
-            </div>
+            ) : (
+              <div className="aspect-video w-full overflow-hidden rounded-lg">
+                <img 
+                  src={game.thumbnailUrl || '/placeholder.svg'} 
+                  alt={`${game.title} screenshot`}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            )}
           </div>
           
           {/* Tabs */}

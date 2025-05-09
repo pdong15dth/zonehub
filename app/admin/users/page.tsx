@@ -57,9 +57,10 @@ export default function UsersManagement() {
 
     if (error) {
       toast({
-        title: "Error",
-        description: "Failed to update user role.",
+        title: "Lỗi",
+        description: "Không thể cập nhật vai trò người dùng.",
         variant: "destructive",
+        duration: 3000,
       })
       return
     }
@@ -74,8 +75,9 @@ export default function UsersManagement() {
     )
 
     toast({
-      title: "Success",
-      description: `User role updated to ${newRole}.`,
+      title: "Thành công",
+      description: `Vai trò người dùng đã được cập nhật thành ${newRole}.`,
+      duration: 3000,
     })
   }
 
@@ -140,10 +142,10 @@ export default function UsersManagement() {
                             <AvatarFallback>
                               {user.full_name
                                 ? user.full_name
-                                    .split(" ")
-                                    .map((n) => n[0])
-                                    .join("")
-                                    .toUpperCase()
+                                  .split(" ")
+                                  .map((n) => n[0])
+                                  .join("")
+                                  .toUpperCase()
                                 : user.email.substring(0, 2).toUpperCase()}
                             </AvatarFallback>
                           </Avatar>

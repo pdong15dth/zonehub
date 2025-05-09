@@ -2,15 +2,15 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardFooter, 
-  CardHeader, 
-  CardTitle 
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle
 } from '@/components/ui/card';
-import { toast } from 'sonner';
+import { toast } from "@/components/ui/use-toast"
 import { ShieldCheck, LoaderCircle, ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
 
@@ -30,10 +30,18 @@ export default function UpdateArticlePoliciesPage() {
         throw new Error(data.error || 'Failed to update article policies');
       }
 
-      toast.success('Article policies updated successfully for development');
+      toast({
+        title: 'Thành công',
+        description: 'Article policies updated successfully for development',
+        duration: 3000,
+      })
     } catch (error) {
       console.error('Error updating article policies:', error);
-      toast.error('Failed to update article policies. See console for details.');
+      toast({
+        title: 'Lỗi',
+        description: 'Failed to update article policies. See console for details.',
+        duration: 3000,
+      })
     } finally {
       setLoading(false);
     }
@@ -42,9 +50,9 @@ export default function UpdateArticlePoliciesPage() {
   return (
     <div className="container mx-auto py-10">
       <div className="mb-6">
-        <Button 
-          variant="ghost" 
-          size="sm" 
+        <Button
+          variant="ghost"
+          size="sm"
           asChild
           className="mb-4"
         >
@@ -53,7 +61,7 @@ export default function UpdateArticlePoliciesPage() {
             Back to Database Setup
           </Link>
         </Button>
-        
+
         <h1 className="text-3xl font-bold tracking-tight">Update Article Policies</h1>
         <p className="text-muted-foreground mt-2">
           Update database policies for article operations during development
@@ -75,11 +83,11 @@ export default function UpdateArticlePoliciesPage() {
                 <span className="font-medium">Warning: Development Use Only</span>
               </div>
               <p className="text-sm">
-                This will update the Row Level Security policies to allow full public access to the articles table 
+                This will update the Row Level Security policies to allow full public access to the articles table
                 without authentication. This should only be used in development environments.
               </p>
             </div>
-            
+
             <div className="bg-slate-50 dark:bg-slate-900 p-4 rounded text-sm overflow-auto">
               <pre className="whitespace-pre-wrap">
                 {`-- New policy that will be created:
@@ -93,8 +101,8 @@ CREATE POLICY "Development access" ON public.articles
           </div>
         </CardContent>
         <CardFooter>
-          <Button 
-            onClick={handleUpdatePolicies} 
+          <Button
+            onClick={handleUpdatePolicies}
             disabled={loading}
             className="w-full"
           >

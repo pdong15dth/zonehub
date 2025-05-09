@@ -93,7 +93,8 @@ export function CommentSection({ articleId }: CommentSectionProps) {
       toast({
         title: "Bạn cần đăng nhập",
         description: "Vui lòng đăng nhập để bình luận",
-        variant: "destructive"
+        variant: "destructive",
+        duration: 3000,
       })
       return
     }
@@ -114,7 +115,8 @@ export function CommentSection({ articleId }: CommentSectionProps) {
     
     toast({
       title: "Bình luận đã được gửi",
-      description: "Cảm ơn bạn đã chia sẻ ý kiến!"
+      description: "Cảm ơn bạn đã chia sẻ ý kiến!",
+      duration: 3000,
     })
   }
   

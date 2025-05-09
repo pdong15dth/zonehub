@@ -1,23 +1,37 @@
-"use client"
+import { Metadata } from 'next';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
+import { ChevronLeft } from 'lucide-react';
+import { GameForm } from './_components/game-form';
 
-import { useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { Loader2 } from "lucide-react"
+export const metadata: Metadata = {
+  title: 'Thêm game mới | Admin',
+  description: 'Thêm game mới vào cơ sở dữ liệu',
+};
 
 export default function CreateGamePage() {
-  const router = useRouter()
-  
-  useEffect(() => {
-    // Redirect to the create/edit page
-    router.push('/admin/content/games/create/edit')
-  }, [router])
-  
   return (
-    <div className="flex justify-center items-center h-64">
-      <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      <span className="ml-2 text-muted-foreground">Đang chuyển hướng...</span>
+    <div className="">
+      <div className="flex items-center space-x-2 mb-6">
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          asChild
+          className="h-8"
+        >
+          <Link href="/admin/content/games">
+            <ChevronLeft className="mr-1 h-4 w-4" />
+            <span>Quay lại</span>
+          </Link>
+        </Button>
+      </div>
+      
+      <h1 className="text-2xl font-bold tracking-tight mb-3">Thêm game mới</h1>
+      <p className="text-muted-foreground mb-6">
+        Điền đầy đủ thông tin để thêm game mới vào cơ sở dữ liệu.
+      </p>
+      
+      <GameForm />
     </div>
-  )
-}
-
-export const dynamic = 'force-dynamic' 
+  );
+} 

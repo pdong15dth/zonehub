@@ -24,7 +24,7 @@ const nextConfig = {
   trailingSlash: false,
   compress: true,
   poweredByHeader: false,
-  reactStrictMode: true,
+  reactStrictMode: false,
   
   experimental: {
     optimizeCss: true,
