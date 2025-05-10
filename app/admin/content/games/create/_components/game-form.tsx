@@ -41,6 +41,7 @@ import {
 import { createBrowserSupabaseClient } from "@/lib/supabase"
 import { Badge } from "@/components/ui/badge"
 import { ImageUploadMultiple } from "@/components/ui/image-upload-multiple"
+import { CKEditorField } from "@/components/ui/ckeditor"
 
 // Map of hardware option values to display names
 const valueMap: Record<string, string> = {
@@ -945,7 +946,7 @@ export function GameForm({ initialData }: { initialData?: any }) {
           <h2 className="text-2xl font-bold">Nội dung chi tiết</h2>
           <div className="prose prose-sm max-w-none">
             {game.content ? (
-              <div dangerouslySetInnerHTML={{ __html: game.content.replace(/\n/g, '<br/>') }} />
+              <div dangerouslySetInnerHTML={{ __html: game.content }} />
             ) : (
               <p className="text-muted-foreground">Chưa có nội dung chi tiết</p>
             )}
@@ -1119,13 +1120,11 @@ export function GameForm({ initialData }: { initialData?: any }) {
 
                     <div className="space-y-2">
                       <Label htmlFor="content">Nội dung chi tiết</Label>
-                      <Textarea
-                        id="content"
+                      <CKEditorField
                         value={game.content}
-                        onChange={(e) => handleChange('content', e.target.value)}
+                        onChange={(value) => handleChange('content', value)}
                         placeholder="Nhập nội dung chi tiết về game..."
-                        rows={10}
-                        className="resize-none min-h-[300px]"
+                        minHeight="400px"
                       />
                       <p className="text-xs text-muted-foreground">
                         Mô tả chi tiết, thông tin gameplay, câu chuyện, tính năng,...

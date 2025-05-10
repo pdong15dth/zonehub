@@ -3,17 +3,23 @@ import { createServerSupabaseClient } from '@/lib/supabase'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
-    const id = params.id
+    // Properly await params before accessing properties
+    const params = await context.params
     
-    if (!id) {
+    // Ensure we have a valid ID from params
+    if (!params || !params.id) {
+      console.error("Missing ID parameter:", params)
       return NextResponse.json(
         { error: "Game ID is required" },
         { status: 400 }
       )
     }
+    
+    const id = params.id
+    console.log("Processing request for game ID:", id)
     
     // Initialize Supabase client
     const supabase = createServerSupabaseClient()
