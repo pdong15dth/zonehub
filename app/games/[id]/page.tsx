@@ -46,6 +46,7 @@ import { ModeToggle } from "@/components/mode-toggle"
 import { UserNav } from "@/components/user-nav"
 import { useToast } from "@/components/ui/use-toast"
 import { Dialog, DialogContent, DialogClose, DialogTitle } from "@/components/ui/dialog"
+import { GameReviews } from "@/components/games/game-reviews"
 
 export default function GameDetailPage() {
   const params = useParams();
@@ -753,68 +754,7 @@ export default function GameDetailPage() {
             </TabsContent>
 
             <TabsContent value="reviews" className="mt-2 focus-visible:outline-none focus-visible:ring-0">
-              <Card className="bg-card/50 backdrop-blur-sm shadow-md border-muted">
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <div>
-                    <CardTitle>Đánh giá từ cộng đồng</CardTitle>
-                    <CardDescription>Chia sẻ trải nghiệm của bạn với game này</CardDescription>
-                  </div>
-                  <Button>
-                    <MessageSquare className="h-4 w-4 mr-2" />
-                    Viết đánh giá
-                  </Button>
-                </CardHeader>
-                <CardContent>
-                  {gameReviews && gameReviews.length > 0 ? (
-                    <div className="space-y-6">
-                      {gameReviews.map((review) => (
-                        <Card key={review.id} className="border-0 border-b rounded-none last:border-0 bg-transparent">
-                          <CardHeader className="pb-2">
-                            <div className="flex justify-between items-start">
-                              <div className="flex items-center gap-3">
-                                <Avatar className="h-10 w-10 border">
-                                  <AvatarImage src={review.avatar} alt={review.author} />
-                                  <AvatarFallback className="bg-primary/10">{review.author.charAt(0)}</AvatarFallback>
-                                </Avatar>
-                                <div>
-                                  <CardTitle className="text-base">{review.author}</CardTitle>
-                                  <CardDescription className="flex items-center gap-1">
-                                    <Clock className="h-3 w-3" />
-                                    {review.date}
-                                  </CardDescription>
-                                </div>
-                              </div>
-                              <div className="flex">
-                                {renderStars(review.rating)}
-                              </div>
-                            </div>
-                          </CardHeader>
-                          <CardContent>
-                            <p className="text-sm leading-relaxed">{review.content}</p>
-                          </CardContent>
-                          <CardFooter className="flex justify-between">
-                            <Button variant="ghost" size="sm" className="gap-1">
-                              <Heart className="h-4 w-4" />
-                              <span>{review.likes}</span>
-                            </Button>
-                            <Button variant="ghost" size="sm">Trả lời</Button>
-                          </CardFooter>
-                        </Card>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-12 bg-muted/30 rounded-lg">
-                      <MessageSquare className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                      <h3 className="text-lg font-medium mb-2">Chưa có đánh giá nào</h3>
-                      <p className="text-muted-foreground mb-6">Hãy là người đầu tiên đánh giá game này</p>
-                      <Button className="shadow-md">
-                        <MessageSquare className="h-4 w-4 mr-2" />
-                        Viết đánh giá
-                      </Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+              <GameReviews gameId={id} />
             </TabsContent>
           </Tabs>
         </div>

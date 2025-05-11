@@ -90,3 +90,5 @@ For example:
 
 - Modular Approach: As your project grows, consider adopting a more modular structure, where each feature or domain has its own folder containing components, hooks, and utilities specific to that feature.
 
+
+IMPORTANT: Phải base theo source của tôi để thực hiện chức năng mới
