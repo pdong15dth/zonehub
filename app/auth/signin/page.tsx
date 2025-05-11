@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -17,6 +17,7 @@ export default function SignIn() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const callbackUrl = searchParams.get("callbackUrl") || "/"
+  const errorFromQuery = searchParams.get("error")
   const { supabase } = useSupabase()
 
   const [email, setEmail] = useState("")
@@ -24,6 +25,16 @@ export default function SignIn() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
   const [errorDetails, setErrorDetails] = useState("")
+  const [retryCount, setRetryCount] = useState(0)
+  const [isAutoRetrying, setIsAutoRetrying] = useState(false)
+
+  // Hiển thị lỗi từ URL query nếu có
+  useEffect(() => {
+    if (errorFromQuery) {
+      setError("Lỗi đăng nhập")
+      setErrorDetails(decodeURIComponent(errorFromQuery))
+    }
+  }, [errorFromQuery])
 
   const handleEmailSignIn = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -55,23 +66,33 @@ export default function SignIn() {
         } else if (error.message.includes("Email not confirmed")) {
           setError("Email chưa được xác nhận")
           setErrorDetails("Vui lòng kiểm tra hộp thư để xác nhận email của bạn")
+        } else if (error.message.includes("Database error granting user")) {
+          setError("Lỗi khi tạo hồ sơ người dùng")
+          setErrorDetails("Vui lòng thử lại sau giây lát hoặc sử dụng công cụ chẩn đoán tài khoản để sửa chữa vấn đề này. <a href='/auth/account-diagnostic' class='text-blue-600 underline'>Mở công cụ chẩn đoán</a>")
+        } else if (error.message.includes("Rate limit exceeded")) {
+          setError("Quá nhiều lần đăng nhập")
+          setErrorDetails("Vui lòng thử lại sau ít phút")
         } else {
           setError(error.message)
+          setErrorDetails(`Mã lỗi: ${error.status || 'unknown'}`)
         }
         
         setIsLoading(false)
+        setIsAutoRetrying(false)
         return
       }
 
       // Đăng nhập thành công
       if (data.user) {
         console.log("Đăng nhập thành công, đang chuyển hướng đến: ", callbackUrl)
+        setRetryCount(0)
+        setIsAutoRetrying(false)
         
         // Đảm bảo phiên đăng nhập được thiết lập
         const { data: sessionCheck } = await supabase.auth.getSession()
         console.log("Phiên đăng nhập:", sessionCheck?.session?.user?.id)
         
-        // Đảm bảo người dùng có trong database mà không chờ đợi kết quả
+        // Đảm bảo người dùng có trong database
         try {
           console.log("Đang đảm bảo dữ liệu người dùng trong DB")
           const profile = await ensureUserInDatabase(supabase, data.user)
@@ -102,6 +123,7 @@ export default function SignIn() {
       console.error("Lỗi không mong đợi:", error)
       setError("Đã xảy ra lỗi không mong muốn. Vui lòng thử lại sau.")
       setIsLoading(false)
+      setIsAutoRetrying(false)
     }
   }
 
@@ -133,6 +155,9 @@ export default function SignIn() {
     }
   }
 
+  // Link để debug nếu gặp lỗi
+  const showDebugLink = error !== "" && retryCount > 0
+
   return (
     <div className="container flex h-screen w-screen flex-col items-center justify-center">
       <Link href="/" className="absolute left-4 top-4 md:left-8 md:top-8 flex items-center gap-2 font-semibold">
@@ -159,7 +184,10 @@ export default function SignIn() {
                 <AlertDescription className="mt-1">
                   {error}
                   {errorDetails && (
-                    <p className="text-xs mt-1">{errorDetails}</p>
+                    <p className="text-xs mt-1" dangerouslySetInnerHTML={{ __html: errorDetails }}></p>
+                  )}
+                  {isAutoRetrying && (
+                    <p className="text-xs mt-1 animate-pulse">Đang tự động thử lại ({retryCount}/3)...</p>
                   )}
                 </AlertDescription>
               </Alert>
@@ -202,6 +230,14 @@ export default function SignIn() {
                     "Đăng nhập"
                   )}
                 </Button>
+                
+                {showDebugLink && (
+                  <div className="text-center mt-2">
+                    <Link href="/auth/debug" className="text-xs text-muted-foreground hover:underline">
+                      Gặp lỗi? Dùng công cụ kiểm tra
+                    </Link>
+                  </div>
+                )}
               </div>
             </form>
           </CardContent>

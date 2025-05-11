@@ -47,6 +47,7 @@ import { UserNav } from "@/components/user-nav"
 import { useToast } from "@/components/ui/use-toast"
 import { Dialog, DialogContent, DialogClose, DialogTitle } from "@/components/ui/dialog"
 import { GameReviews } from "@/components/games/game-reviews"
+import { AuthRedirect } from "@/components/providers/auth-redirect"
 
 export default function GameDetailPage() {
   const params = useParams();
@@ -242,6 +243,7 @@ export default function GameDetailPage() {
   if (loading) {
     return (
       <div className="flex min-h-screen flex-col">
+        <AuthRedirect />
         <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="container flex h-16 items-center justify-between">
             <MainNav />
@@ -271,6 +273,7 @@ export default function GameDetailPage() {
   if (error || !game) {
     return (
       <div className="flex min-h-screen flex-col">
+        <AuthRedirect />
         <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="container flex h-16 items-center justify-between">
             <MainNav />
@@ -323,6 +326,7 @@ export default function GameDetailPage() {
 
   return (
     <div className="flex min-h-screen flex-col">
+      <AuthRedirect />
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 items-center justify-between">
           <MainNav />

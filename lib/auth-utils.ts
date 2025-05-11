@@ -10,6 +10,8 @@ export type UserRole = "admin" | "member" | "editor"
  */
 export async function ensureUserInDatabase(supabase: SupabaseClient<Database>, user: User): Promise<UserProfile | null> {
   try {
+    console.log(`Đảm bảo người dùng ${user.id} (${user.email}) tồn tại trong cơ sở dữ liệu`)
+    
     // Kiểm tra xem người dùng đã có trong bảng users chưa
     const { data: existingUser, error: checkError } = await supabase
       .from("users")
@@ -17,13 +19,18 @@ export async function ensureUserInDatabase(supabase: SupabaseClient<Database>, u
       .eq("id", user.id)
       .single()
     
-    if (checkError && !checkError.message.includes("No rows found")) {
-      console.error("Error checking user:", checkError)
-      return null
+    if (checkError) {
+      if (checkError.message.includes("No rows found")) {
+        console.log(`Không tìm thấy người dùng ${user.id}, sẽ tạo mới`)
+      } else {
+        console.error("Lỗi khi kiểm tra người dùng:", checkError)
+        // Vẫn tiếp tục để thử tạo người dùng
+      }
     }
     
     // Nếu đã có, trả về thông tin người dùng
     if (existingUser) {
+      console.log(`Người dùng ${user.id} đã tồn tại, role: ${existingUser.role}`)
       // Chuyển đổi dữ liệu users sang định dạng UserProfile
       return {
         id: existingUser.id,
@@ -43,35 +50,133 @@ export async function ensureUserInDatabase(supabase: SupabaseClient<Database>, u
     // Chuẩn bị dữ liệu cho bảng users
     const newUserData = {
       id: user.id,
-      email: user.email,
-      full_name: userMetadata.full_name || userMetadata.name || null,
+      email: user.email || '', // Ensure email is never null
+      full_name: userMetadata.full_name || userMetadata.name || user.email?.split('@')[0] || 'User',
       avatar_url: userMetadata.avatar_url || userMetadata.picture || "/placeholder.svg",
-      role: "member" as const,
-      created_at: new Date().toISOString(),
+      role: "member" as const
+      // Removed created_at since it has a DEFAULT NOW() constraint in the table
     }
     
-    const { error: insertError } = await supabase
-      .from("users")
-      .insert(newUserData)
+    console.log(`Chuẩn bị thêm người dùng mới với dữ liệu:`, newUserData)
     
-    if (insertError) {
-      console.error("Error creating user profile:", insertError)
+    // Thử tạo người dùng với cơ chế thử lại
+    const MAX_RETRIES = 3
+    let currentRetry = 0
+    let lastError = null
+    
+    while (currentRetry < MAX_RETRIES) {
+      try {
+        console.log(`Đang thử tạo người dùng (lần thử ${currentRetry + 1}/${MAX_RETRIES})`)
+        
+        const { error } = await supabase
+          .from("users")
+          .insert(newUserData)
+        
+        if (!error) {
+          console.log(`Đã tạo người dùng ${user.id} thành công!`)
+          break
+        }
+        
+        // Lưu lại lỗi để thử lại
+        lastError = error
+        console.error(`Lỗi khi tạo người dùng (lần thử ${currentRetry + 1}/${MAX_RETRIES}):`, error)
+        
+        // Nếu lỗi là do người dùng đã tồn tại, thử lấy lại thông tin
+        if (error.code === '23505' || error.message.includes('duplicate') || error.message.includes('already exists')) {
+          console.log("Có vẻ người dùng đã tồn tại, thử lấy lại thông tin...")
+          const { data: retryUser, error: retryError } = await supabase
+            .from("users")
+            .select("*")
+            .eq("id", user.id)
+            .single()
+          
+          if (!retryError && retryUser) {
+            console.log(`Đã tìm thấy người dùng ${user.id} đã tồn tại, role: ${retryUser.role}`)
+            return {
+              id: retryUser.id,
+              created_at: retryUser.created_at,
+              updated_at: retryUser.created_at,
+              username: retryUser.email?.split('@')[0] || null,
+              email: retryUser.email,
+              full_name: retryUser.full_name,
+              avatar_url: retryUser.avatar_url,
+              role: retryUser.role
+            } as UserProfile
+          }
+        }
+        
+        // Đợi một khoảng thời gian trước khi thử lại
+        await new Promise(resolve => setTimeout(resolve, 500 * (currentRetry + 1)))
+      } catch (err) {
+        console.error(`Lỗi không mong đợi khi tạo người dùng (lần thử ${currentRetry + 1}/${MAX_RETRIES}):`, err)
+        lastError = err
+      }
+      
+      currentRetry++
+    }
+    
+    // Nếu sau khi thử lại vẫn thất bại, kiểm tra lần cuối xem người dùng có tồn tại không
+    if (lastError) {
+      console.log("Thử lại lần cuối kiểm tra xem người dùng đã được tạo chưa...")
+      const { data: finalCheck, error: finalCheckError } = await supabase
+        .from("users")
+        .select("*")
+        .eq("id", user.id)
+        .single()
+      
+      if (!finalCheckError && finalCheck) {
+        console.log(`Cuối cùng cũng tìm thấy người dùng ${user.id}, role: ${finalCheck.role}`)
+        return {
+          id: finalCheck.id,
+          created_at: finalCheck.created_at,
+          updated_at: finalCheck.created_at,
+          username: finalCheck.email?.split('@')[0] || null,
+          email: finalCheck.email,
+          full_name: finalCheck.full_name,
+          avatar_url: finalCheck.avatar_url,
+          role: finalCheck.role
+        } as UserProfile
+      }
+      
+      console.error("Tất cả các lần thử đều thất bại, không thể tạo hoặc tìm người dùng")
       return null
     }
     
-    // Chuyển đổi dữ liệu sang định dạng UserProfile
-    return {
-      id: newUserData.id,
-      created_at: newUserData.created_at,
-      updated_at: newUserData.created_at,
-      username: newUserData.email?.split('@')[0] || null,
-      email: newUserData.email,
-      full_name: newUserData.full_name,
-      avatar_url: newUserData.avatar_url,
-      role: newUserData.role
+    // Lấy thông tin người dùng sau khi tạo
+    const { data: createdUser, error: fetchError } = await supabase
+      .from("users")
+      .select("*")
+      .eq("id", user.id)
+      .single()
+    
+    if (fetchError || !createdUser) {
+      console.error("Không thể lấy thông tin người dùng sau khi tạo:", fetchError)
+      // Trả về profile dựa trên dữ liệu đã biết
+      return {
+        id: newUserData.id,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        username: newUserData.email?.split('@')[0] || null,
+        email: newUserData.email,
+        full_name: newUserData.full_name,
+        avatar_url: newUserData.avatar_url,
+        role: newUserData.role
+      }
     }
+    
+    // Trả về profile từ dữ liệu đã lấy được
+    return {
+      id: createdUser.id,
+      created_at: createdUser.created_at,
+      updated_at: createdUser.created_at,
+      username: createdUser.email?.split('@')[0] || null,
+      email: createdUser.email,
+      full_name: createdUser.full_name,
+      avatar_url: createdUser.avatar_url,
+      role: createdUser.role
+    } as UserProfile
   } catch (error) {
-    console.error("Error in ensureUserInDatabase:", error)
+    console.error("Lỗi không mong đợi trong ensureUserInDatabase:", error)
     return null
   }
 }

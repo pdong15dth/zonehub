@@ -6,10 +6,12 @@ import { NewsFeed } from "@/components/news-feed"
 import { FeaturedGames } from "@/components/featured-games"
 import { TrendingRepos } from "@/components/trending-repos"
 import { ModeToggle } from "@/components/mode-toggle"
+import { AuthRedirect } from "@/components/providers/auth-redirect"
 
 export default function Home() {
   return (
     <div className="flex min-h-screen flex-col">
+      <AuthRedirect />
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 items-center justify-between">
           <MainNav />

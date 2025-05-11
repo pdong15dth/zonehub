@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase'
+import { requireAuth, optionalAuth } from '@/lib/auth-api'
 
 interface User {
   id: string
-  email?: string
-  full_name?: string
-  avatar_url?: string
+  email?: string | null
+  full_name?: string | null
+  avatar_url?: string | null
 }
 
 export async function GET(req: NextRequest) {
@@ -59,14 +60,25 @@ export async function GET(req: NextRequest) {
     // Create a user map for easier lookup
     const userMap: Record<string, User> = {}
     if (users) {
-      users.forEach((user: User) => {
-        userMap[user.id] = user
+      users.forEach((user: any) => {
+        userMap[user.id] = {
+          id: user.id,
+          email: user.email || null,
+          full_name: user.full_name || null,
+          avatar_url: user.avatar_url || null
+        }
       })
     }
 
     // Transform data for frontend consumption
     const formattedReviews = reviews.map(review => {
-      const user = userMap[review.user_id] || {} as User
+      const user = userMap[review.user_id] || {
+        id: review.user_id,
+        email: null,
+        full_name: null,
+        avatar_url: null
+      }
+      
       return {
         id: review.id,
         rating: review.rating,
@@ -96,19 +108,16 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  // Sử dụng middleware xác thực
+  const { user, response } = await requireAuth(req)
+  
+  // Nếu không có user, trả về lỗi 401 từ middleware
+  if (!user) {
+    return response
+  }
+  
   try {
     const supabase = createServerSupabaseClient()
-    
-    // Get the current user from Supabase Auth
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      )
-    }
-    
     const body = await req.json()
     const { gameId, rating, content } = body
     

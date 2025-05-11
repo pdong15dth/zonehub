@@ -6,7 +6,9 @@ import { useToast } from "@/components/ui/use-toast"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
-import { Star } from "lucide-react"
+import { Star, AlertCircle } from "lucide-react"
+import { useSupabase } from "@/components/providers/supabase-provider"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
 interface ReviewFormProps {
   gameId: string
@@ -29,12 +31,24 @@ export function ReviewForm({
 }: ReviewFormProps) {
   const { toast } = useToast()
   const router = useRouter()
+  const { supabase, user } = useSupabase()
 
   const [rating, setRating] = useState<number>(currentUserReview?.rating || 0)
   const [hoverRating, setHoverRating] = useState<number>(0)
   const [content, setContent] = useState<string>(currentUserReview?.content || "")
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
+  const [sessionChecked, setSessionChecked] = useState<boolean>(false)
+
+  // Check for login status
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data } = await supabase.auth.getSession()
+      setSessionChecked(true)
+    }
+    
+    checkSession()
+  }, [supabase.auth])
 
   // Reset form when currentUserReview changes
   useEffect(() => {
@@ -47,17 +61,37 @@ export function ReviewForm({
     }
   }, [currentUserReview])
 
+  const handleLoginRedirect = () => {
+    try {
+      // Save the current URL to local storage to redirect back after login
+      const currentPath = window.location.pathname
+      localStorage.setItem('authRedirectPath', currentPath)
+      console.log("Saving redirect path:", currentPath)
+      
+      // Redirect to sign in
+      router.push("/auth/signin?callbackUrl=" + encodeURIComponent(currentPath))
+    } catch (err) {
+      console.error("Error during login redirect:", err)
+      // Fallback to simple redirect
+      router.push("/auth/signin")
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
     
-    if (!isSignedIn) {
+    // Double-check auth status directly before submission
+    const { data: sessionData } = await supabase.auth.getSession()
+    const isUserLoggedIn = !!sessionData.session?.user
+    
+    if (!isUserLoggedIn) {
       toast({
         title: "Đăng nhập để tiếp tục",
         description: "Vui lòng đăng nhập để đánh giá game này.",
         variant: "destructive",
       })
-      router.push("/auth/signin?callbackUrl=" + encodeURIComponent(window.location.pathname))
+      handleLoginRedirect()
       return
     }
 
@@ -85,6 +119,16 @@ export function ReviewForm({
           content,
         }),
       })
+
+      if (response.status === 401) {
+        toast({
+          title: "Phiên đăng nhập hết hạn",
+          description: "Vui lòng đăng nhập lại để tiếp tục.",
+          variant: "destructive",
+        })
+        handleLoginRedirect()
+        return
+      }
 
       const result = await response.json()
 
@@ -128,6 +172,26 @@ export function ReviewForm({
       setRating(currentUserReview?.rating || 0)
       setContent(currentUserReview?.content || "")
     }
+  }
+
+  // Show login prompt if not signed in
+  if (sessionChecked && !user && !isSignedIn) {
+    return (
+      <div className="space-y-4 p-4 border rounded-lg">
+        <Alert variant="default" className="bg-muted">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription className="text-center">
+            Bạn cần đăng nhập để đánh giá game này
+          </AlertDescription>
+        </Alert>
+        <Button 
+          onClick={handleLoginRedirect} 
+          className="w-full"
+        >
+          Đăng nhập để đánh giá
+        </Button>
+      </div>
+    )
   }
 
   return (

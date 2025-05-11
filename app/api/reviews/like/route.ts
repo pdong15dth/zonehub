@@ -1,20 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase'
+import { requireAuth } from '@/lib/auth-api'
 
 export async function POST(req: NextRequest) {
+  // Sử dụng middleware xác thực
+  const { user, response } = await requireAuth(req)
+  
+  // Nếu không có user, trả về lỗi 401 từ middleware
+  if (!user) {
+    return response
+  }
+  
   try {
     const supabase = createServerSupabaseClient()
-    
-    // Get the current user from Supabase Auth
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      )
-    }
-    
     const body = await req.json()
     const { reviewId } = body
     
