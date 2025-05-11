@@ -301,13 +301,10 @@ export async function GET(request: Request) {
     const page = parseInt(searchParams.get("page") || "1")
     const offset = (page - 1) * limit
     
-    // Build Supabase query
+    // Build Supabase query - Remove the author relation that doesn't exist
     let supabaseQuery = supabase
       .from('games')
-      .select(`
-        *,
-        author:author_id(id, full_name, email, avatar_url)
-      `)
+      .select('*')
       .order('created_at', { ascending: false })
       .limit(limit)
       .range(offset, offset + limit - 1)
@@ -361,7 +358,7 @@ export async function GET(request: Request) {
       official_website: game.official_website,
       created_at: game.created_at,
       updated_at: game.updated_at,
-      author: game.author || null
+      author_id: game.author_id || null
     }))
     
     // Get total count

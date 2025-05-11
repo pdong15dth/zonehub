@@ -1,16 +1,16 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { notFound, useParams } from "next/navigation"
+import { notFound, useRouter, useParams } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
-import { 
-  Card, 
-  CardContent, 
-  CardHeader, 
+import {
+  Card,
+  CardContent,
+  CardHeader,
   CardTitle,
-  CardDescription, 
-  CardFooter 
+  CardDescription,
+  CardFooter
 } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -33,270 +33,292 @@ import {
   Gamepad2,
   Laptop,
   Server,
-  Layers
+  Layers,
+  Loader2,
+  Globe,
+  ImageIcon,
+  ShieldCheck,
+  ExternalLink,
+  Clock
 } from "lucide-react"
 import { MainNav } from "@/components/main-nav"
 import { ModeToggle } from "@/components/mode-toggle"
 import { UserNav } from "@/components/user-nav"
-import { ImageGallery } from "@/components/games/image-gallery"
-
-// Mock game data
-const games = [
-  {
-    id: 1,
-    title: "Cyberpunk Legends",
-    description: "Trò chơi nhập vai thế giới mở đặt trong bối cảnh tương lai đầy công nghệ cao và nguy hiểm.",
-    thumbnailUrl: "/placeholder.svg",
-    screenshots: [
-      "/placeholder.svg",
-      "/placeholder.svg",
-      "/placeholder.svg",
-      "/placeholder.svg"
-    ],
-    developer: "Tech Games Studio",
-    publisher: "Mega Entertainment",
-    releaseDate: "15/06/2024",
-    genre: ["RPG", "Thế giới mở", "Hành động"],
-    platforms: ["PC", "PlayStation 5", "Xbox Series X"],
-    rating: 4.7,
-    reviews: 325,
-    players: 12500,
-    fileSize: "45 GB",
-    tags: ["Cyberpunk", "Tương lai", "Nhập vai", "Hành động"],
-    systemRequirements: {
-      minimum: {
-        os: "Windows 10 64-bit",
-        processor: "Intel Core i5-8400 / AMD Ryzen 5 2600",
-        memory: "8 GB RAM",
-        graphics: "NVIDIA GTX 1060 6GB / AMD Radeon RX 580 8GB",
-        storage: "50 GB"
-      },
-      recommended: {
-        os: "Windows 10 64-bit",
-        processor: "Intel Core i7-10700K / AMD Ryzen 7 3700X",
-        memory: "16 GB RAM",
-        graphics: "NVIDIA RTX 2070 / AMD Radeon RX 5700 XT",
-        storage: "50 GB SSD"
-      }
-    }
-  },
-  {
-    id: 2,
-    title: "Fantasy Kingdom",
-    description: "Game phiêu lưu giả tưởng với thế giới rộng lớn, nhiều nhiệm vụ và sinh vật huyền bí.",
-    thumbnailUrl: "/placeholder.svg",
-    screenshots: [
-      "/placeholder.svg",
-      "/placeholder.svg",
-      "/placeholder.svg"
-    ],
-    developer: "Dream Games",
-    publisher: "Fantasy Interactive",
-    releaseDate: "20/05/2024",
-    genre: ["Phiêu lưu", "Giả tưởng", "Hành động"],
-    platforms: ["PC", "PlayStation 5", "Nintendo Switch"],
-    rating: 4.5,
-    reviews: 210,
-    players: 8900,
-    fileSize: "35 GB",
-    tags: ["Giả tưởng", "Phép thuật", "Rồng", "Phiêu lưu"],
-    systemRequirements: {
-      minimum: {
-        os: "Windows 10 64-bit",
-        processor: "Intel Core i5-6600 / AMD Ryzen 3 1300X",
-        memory: "8 GB RAM",
-        graphics: "NVIDIA GTX 960 / AMD Radeon R9 380",
-        storage: "40 GB"
-      },
-      recommended: {
-        os: "Windows 10 64-bit",
-        processor: "Intel Core i7-8700 / AMD Ryzen 5 3600",
-        memory: "16 GB RAM",
-        graphics: "NVIDIA GTX 1660 Super / AMD RX 5600 XT",
-        storage: "40 GB SSD"
-      }
-    }
-  }
-]
-
-// Mock review data
-const reviews = [
-  {
-    id: 1,
-    author: "Minh Tuấn",
-    avatar: "/placeholder.svg",
-    date: "01/07/2024",
-    rating: 5,
-    content: "Trò chơi tuyệt vời với đồ họa đẹp và cốt truyện hấp dẫn. Tôi dành nhiều giờ để khám phá thế giới game và vẫn còn nhiều điều thú vị.",
-    likes: 24,
-    gameId: 1
-  },
-  {
-    id: 2,
-    author: "Thu Hà",
-    avatar: "/placeholder.svg",
-    date: "28/06/2024",
-    rating: 4,
-    content: "Game hay, điều khiển nhân vật mượt mà. Một số nhiệm vụ hơi khó và đôi lúc gặp lỗi nhỏ, nhưng nhìn chung trải nghiệm rất tốt.",
-    likes: 12,
-    gameId: 1
-  },
-  {
-    id: 3,
-    author: "Thanh Tùng",
-    avatar: "/placeholder.svg",
-    date: "25/06/2024",
-    rating: 5,
-    content: "Một trong những trò chơi hay nhất năm nay! Cốt truyện sâu sắc, nhân vật phát triển tốt, và thế giới game rất sống động.",
-    likes: 31,
-    gameId: 1
-  }
-]
+import { useToast } from "@/components/ui/use-toast"
+import { Dialog, DialogContent, DialogClose, DialogTitle } from "@/components/ui/dialog"
 
 export default function GameDetailPage() {
-  // Use the useParams hook to get URL parameters in a client component
   const params = useParams();
-  
-  // Debug logging
-  console.log("Debug - Full params object:", params);
-  console.log("Debug - Params type:", typeof params);
-  
-  // Nếu id không có, hiển thị lỗi not found
-  if (!params || !params.id) {
-    console.error("No params.id available");
-    return notFound();
-  }
-  
-  const id = params.id as string;
-  console.log("Debug - Extracted id:", id);
-  console.log("Debug - ID type:", typeof id);
-  
+  const router = useRouter();
+  const { toast } = useToast();
+
+  const id = params?.id as string;
+
   const [game, setGame] = useState<any>(null)
   const [activeTab, setActiveTab] = useState("overview")
   const [activeScreenshot, setActiveScreenshot] = useState(0)
+  const [showImageGallery, setShowImageGallery] = useState(false)
   const [gameReviews, setGameReviews] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  
-  // Log available games for debug
+  const [scrolled, setScrolled] = useState(false)
+
   useEffect(() => {
-    console.log("Debug - Available games:", games);
-    console.log("Debug - Available game IDs:", games.map(g => g.id));
-  }, []);
-  
-  useEffect(() => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      console.log('====== DEBUG GAME FINDING =====');
-      console.log('Getting game with id:', id);
-      
-      // Parse the ID from string to number
-      const gameId = parseInt(id);
-      console.log('Parsed gameId:', gameId, 'Type:', typeof gameId);
-      
-      // Show available IDs for debugging
-      console.log('Available IDs:', games.map(g => ({ id: g.id, type: typeof g.id })));
-      
-      // Thử tìm kiếm theo kiểu dữ liệu string trước
-      let foundGame = games.find(game => String(game.id) === id);
-      
-      // Nếu không tìm thấy, thử tìm kiếm theo kiểu dữ liệu number
-      if (!foundGame) {
-        foundGame = games.find(game => game.id === gameId);
-      }
-      
-      console.log('Found game:', foundGame);
-      
-      if (foundGame) {
-        setGame(foundGame);
-        // Get reviews for this game
-        const filteredReviews = reviews.filter(r => r.gameId === gameId);
-        setGameReviews(filteredReviews);
+    const handleScroll = () => {
+      if (window.scrollY > 100) {
+        setScrolled(true);
       } else {
-        setError(`Không tìm thấy game với ID: ${id}`);
-        console.error('Game not found with id:', gameId);
-        console.log('Raw data comparison:');
-        games.forEach(g => {
-          console.log(`Game ID: ${g.id} (${typeof g.id}) === Requested ID: ${gameId} (${typeof gameId}) => ${g.id === gameId}`);
-          console.log(`String comparison: ${String(g.id) === String(gameId)}`);
+        setScrolled(false);
+      }
+    };
+    
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
+    async function fetchGameDetails() {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Fetch game data from API
+        const response = await fetch(`/api/games/${id}`);
+
+        console.log("Game details response:", response);
+
+        if (!response.ok) {
+          if (response.status === 404) {
+            throw new Error('Game not found');
+          }
+          throw new Error(`Error: ${response.status}`);
+        }
+
+        const gameData = await response.json();
+        console.log("Game details response:", gameData);
+
+        if (!gameData || !gameData.id) {
+          throw new Error('Invalid game data received');
+        }
+
+        setGame(gameData);
+
+        // TODO: Fetch reviews for this game when available
+        // const reviewsResponse = await fetch(`/api/games/${id}/reviews`);
+        // const reviewsData = await reviewsResponse.json();
+        // setGameReviews(reviewsData);
+
+      } catch (error) {
+        console.error('Error fetching game details:', error);
+        setError(error instanceof Error ? error.message : 'Failed to load game details');
+
+        toast({
+          title: "Error",
+          description: "Failed to load game details. Please try again later.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    if (id) {
+      fetchGameDetails();
+    }
+  }, [id, toast]);
+
+  // Parse system requirements JSON
+  const parseSystemRequirements = (requirementsString: string | null) => {
+    if (!requirementsString) return {};
+
+    try {
+      if (requirementsString.startsWith('{') && requirementsString.endsWith('}')) {
+        const parsed = JSON.parse(requirementsString);
+        console.log("Parsed system requirements:", parsed);
+        return parsed;
+      }
+      return { additional: requirementsString };
+    } catch (error) {
+      console.error("Error parsing system requirements:", error);
+      return { additional: requirementsString };
+    }
+  };
+
+  // Helper function to render star ratings
+  const renderStars = (rating: number) => {
+    const stars = [];
+    const fullStars = Math.floor(rating);
+    const hasHalfStar = rating % 1 >= 0.5;
+
+    for (let i = 0; i < fullStars; i++) {
+      stars.push(
+        <Star key={`full-${i}`} className="h-5 w-5 fill-yellow-500 text-yellow-500" />
+      );
+    }
+
+    if (hasHalfStar) {
+      stars.push(
+        <span key="half" className="relative">
+          <Star className="h-5 w-5 text-yellow-500" />
+          <Star className="absolute top-0 left-0 h-5 w-5 overflow-hidden fill-yellow-500 text-yellow-500"
+            style={{ clipPath: 'polygon(0 0, 50% 0, 50% 100%, 0 100%)' }} />
+        </span>
+      );
+    }
+
+    const emptyStars = 5 - stars.length;
+    for (let i = 0; i < emptyStars; i++) {
+      stars.push(
+        <Star key={`empty-${i}`} className="h-5 w-5 text-gray-300" />
+      );
+    }
+
+    return stars;
+  };
+
+  // Helper to get platform display name
+  const getPlatformDisplayName = (platformKey: string) => {
+    const platformMap: Record<string, string> = {
+      'ps5': 'PlayStation 5',
+      'ps4': 'PlayStation 4',
+      'xboxsx': 'Xbox Series X/S',
+      'xboxone': 'Xbox One',
+      'pc': 'PC',
+      'switch': 'Nintendo Switch',
+      'mobile': 'Mobile',
+    };
+
+    return platformMap[platformKey] || platformKey;
+  };
+
+  // Helper to get genre display name
+  const getGenreDisplayName = (genreKey: string) => {
+    const genreMap: Record<string, string> = {
+      'action': 'Hành động',
+      'adventure': 'Phiêu lưu',
+      'rpg': 'Nhập vai',
+      'shooter': 'Bắn súng',
+      'strategy': 'Chiến thuật',
+      'puzzle': 'Giải đố',
+      'simulation': 'Mô phỏng',
+      'sports': 'Thể thao',
+      'racing': 'Đua xe',
+      'horror': 'Kinh dị',
+    };
+
+    return genreMap[genreKey] || genreKey;
+  };
+
+  // Format release date
+  const formatReleaseDate = (dateString: string) => {
+    try {
+      if (!dateString) return "N/A";
+
+      // Try to parse various formats
+      if (dateString.includes('/')) {
+        // DD/MM/YYYY format
+        const [day, month, year] = dateString.split('/');
+        return `${day}/${month}/${year}`;
+      }
+
+      // ISO format
+      const date = new Date(dateString);
+      if (!isNaN(date.getTime())) {
+        return date.toLocaleDateString('vi-VN', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric'
         });
       }
-    } catch (error) {
-      console.error('Error in useEffect:', error);
-      setError('Đã xảy ra lỗi khi tải game');
-    } finally {
-      setLoading(false);
+
+      return dateString;
+    } catch (e) {
+      return dateString;
     }
-  }, [id]);
-  
+  };
+
   // Hiển thị loading state
   if (loading) {
     return (
-      <div className="container mx-auto py-8 text-center">
-        <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-1/3 mx-auto mb-4"></div>
-          <div className="h-64 bg-gray-200 rounded mb-4"></div>
-          <div className="h-4 bg-gray-200 rounded mb-2"></div>
-          <div className="h-4 bg-gray-200 rounded mb-2"></div>
-          <div className="h-4 bg-gray-200 rounded"></div>
-        </div>
-        <p className="mt-4">Đang tải thông tin game...</p>
+      <div className="flex min-h-screen flex-col">
+        <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <div className="container flex h-16 items-center justify-between">
+            <MainNav />
+            <div className="flex items-center gap-2">
+              <ModeToggle />
+              <UserNav />
+            </div>
+          </div>
+        </header>
+        <main className="flex-1">
+          <div className="container mx-auto py-12 text-center">
+            <div className="flex justify-center items-center h-64 flex-col gap-4">
+              <div className="relative w-20 h-20">
+                <div className="absolute top-0 left-0 w-full h-full rounded-full border-4 border-t-primary border-l-transparent border-r-transparent border-b-transparent animate-spin"></div>
+                <div className="absolute top-1 left-1 w-[calc(100%-8px)] h-[calc(100%-8px)] rounded-full border-4 border-t-transparent border-l-transparent border-r-primary border-b-transparent animate-spin"></div>
+                <Gamepad2 className="h-8 w-8 text-primary absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
+              </div>
+              <p className="text-xl font-medium">Đang tải thông tin game...</p>
+            </div>
+          </div>
+        </main>
       </div>
     );
   }
-  
+
   // Hiển thị lỗi nếu có
-  if (error) {
+  if (error || !game) {
     return (
-      <div className="container mx-auto py-8 text-center">
-        <div className="p-6 bg-red-50 rounded-lg border border-red-200 max-w-md mx-auto">
-          <h2 className="text-lg font-medium text-red-800 mb-2">Đã xảy ra lỗi</h2>
-          <p className="text-red-700">{error}</p>
-          <Button className="mt-4" asChild>
-            <Link href="/games">Quay lại danh sách game</Link>
-          </Button>
-        </div>
+      <div className="flex min-h-screen flex-col">
+        <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <div className="container flex h-16 items-center justify-between">
+            <MainNav />
+            <div className="flex items-center gap-2">
+              <ModeToggle />
+              <UserNav />
+            </div>
+          </div>
+        </header>
+        <main className="flex-1">
+          <div className="container mx-auto py-12 text-center">
+            <div className="p-8 border rounded-lg max-w-md mx-auto shadow-lg">
+              <h2 className="text-2xl font-semibold mb-4">Không tìm thấy game</h2>
+              <p className="text-muted-foreground mb-6">{error || "Game không tồn tại hoặc đã bị xóa."}</p>
+              <Button onClick={() => router.push('/games')}>
+                <ChevronLeft className="mr-2 h-4 w-4" />
+                Quay lại danh sách games
+              </Button>
+            </div>
+          </div>
+        </main>
       </div>
     );
   }
-  
-  if (!game) {
-    return notFound()
-  }
-  
-  // Calculate average rating from reviews
-  const averageRating = gameReviews.length > 0 
-    ? gameReviews.reduce((acc, review) => acc + review.rating, 0) / gameReviews.length 
-    : game.rating || 0
-  
-  // Generate rating breakdown
-  const ratingCounts = [0, 0, 0, 0, 0] // 1-5 stars
-  gameReviews.forEach(review => {
-    if (review.rating >= 1 && review.rating <= 5) {
-      ratingCounts[review.rating - 1]++
+
+  // Extract system requirements
+  const systemRequirements = parseSystemRequirements(game.system_requirements);
+
+  // Get game cover image
+  const getCoverImage = () => {
+    if (game.gameImages && Array.isArray(game.gameImages) && game.gameImages.length > 0 && game.gameImages[0]?.url) {
+      return game.gameImages[0].url;
+    } else if (game.image) {
+      return game.image;
     }
-  })
-  
-  const renderStars = (rating: number) => {
-    return (
-      <div className="flex">
-        {[...Array(5)].map((_, i) => (
-          <Star
-            key={i}
-            className={`h-4 w-4 ${
-              i < Math.floor(rating) 
-                ? "text-yellow-400 fill-yellow-400" 
-                : i < rating 
-                  ? "text-yellow-400 fill-yellow-400 opacity-50" 
-                  : "text-gray-300"
-            }`}
-          />
-        ))}
-      </div>
-    )
-  }
+    return "/placeholder.svg";
+  };
+
+  // Get header background image
+  const getHeaderBgImage = () => {
+    if (game.gameImages && Array.isArray(game.gameImages) && game.gameImages.length > 1 && game.gameImages[1]?.url) {
+      return game.gameImages[1].url;
+    } else if (game.gameImages && Array.isArray(game.gameImages) && game.gameImages.length > 0 && game.gameImages[0]?.url) {
+      return game.gameImages[0].url;
+    } else if (game.image) {
+      return game.image;
+    }
+    return "/placeholder.svg";
+  };
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -309,423 +331,565 @@ export default function GameDetailPage() {
           </div>
         </div>
       </header>
-      <div className="container mx-auto py-8">
-        <div className="space-y-8">
-          {/* Breadcrumb */}
-          <div className="flex items-center space-x-2 text-sm">
-            <Link href="/games" className="text-muted-foreground hover:text-primary flex items-center">
-              <ChevronLeft className="h-4 w-4 mr-1" />
-              Quay lại danh sách game
+
+      {/* Hero Section */}
+      <div className="relative w-full h-[50vh] bg-gradient-to-b from-black to-background overflow-hidden">
+        <div className="absolute inset-0 opacity-30" style={{ height: "100%" }}>
+          <Image
+            src={getHeaderBgImage()}
+            alt={game.title}
+            fill
+            className="object-cover object-center"
+            priority
+          />
+        </div>
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent"></div>
+        
+        {/* Back button - floating */}
+        <div className={`fixed top-24 left-4 z-50 transition-all duration-300 ${
+          scrolled ? 'scale-100 opacity-100' : 'scale-95 opacity-90'
+        }`}>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className={`rounded-full shadow-lg backdrop-blur-md hover:bg-background/90 px-4 transition-all duration-300 ${
+              scrolled 
+                ? 'bg-primary/90 hover:bg-primary text-primary-foreground' 
+                : 'bg-background/70'
+            }`}
+            asChild
+          >
+            <Link href="/games">
+              <ChevronLeft className="mr-2 h-4 w-4" />
+              <span>{scrolled ? 'Quay lại danh sách' : 'Quay lại'}</span>
             </Link>
-            <span className="text-muted-foreground">/</span>
-            <span className="text-muted-foreground">{game.genre[0]}</span>
-          </div>
-          
-          {/* Game header */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-            <div className="lg:col-span-2">
-              <div className="space-y-4">
-                <div className="flex flex-wrap items-center gap-2">
-                  {game.genre.map((genre: string) => (
-                    <Badge key={genre} variant="secondary">{genre}</Badge>
-                  ))}
-                </div>
-                
-                <h1 className="text-3xl md:text-4xl font-bold">{game.title}</h1>
-                
-                <div className="flex items-center space-x-4">
-                  <div className="flex items-center">
-                    {renderStars(game.rating)}
-                    <span className="ml-2 font-medium">{game.rating.toFixed(1)}</span>
-                  </div>
-                  <Separator orientation="vertical" className="h-5" />
-                  <div className="flex items-center text-muted-foreground">
-                    <MessageSquare className="h-4 w-4 mr-1" />
-                    <span>{game.reviews} đánh giá</span>
-                  </div>
-                  <Separator orientation="vertical" className="h-5" />
-                  <div className="flex items-center text-muted-foreground">
-                    <Users className="h-4 w-4 mr-1" />
-                    <span>{game.players.toLocaleString()} người chơi</span>
-                  </div>
-                </div>
-                
-                <p className="text-muted-foreground">{game.description}</p>
-                
-                <div className="flex flex-wrap gap-4">
-                  <Button size="lg" className="gap-2">
-                    <Download className="h-5 w-5" />
-                    Tải game ({game.fileSize})
-                  </Button>
-                  <Button variant="outline" size="lg" className="gap-2">
-                    <Play className="h-5 w-5" />
-                    Xem gameplay
-                  </Button>
-                  <Button variant="ghost" size="icon" className="h-10 w-10">
-                    <Heart className="h-5 w-5" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="h-10 w-10">
-                    <Share2 className="h-5 w-5" />
-                  </Button>
-                </div>
-              </div>
-            </div>
-            
-            <div>
-              <Card>
-                <CardContent className="p-4">
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center gap-2">
-                        <Trophy className="h-5 w-5 text-orange-500" />
-                        <span className="font-medium">Phát triển bởi</span>
-                      </div>
-                      <span>{game.developer}</span>
-                    </div>
-                    
-                    <Separator />
-                    
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center gap-2">
-                        <Layers className="h-5 w-5 text-blue-500" />
-                        <span className="font-medium">Phát hành bởi</span>
-                      </div>
-                      <span>{game.publisher}</span>
-                    </div>
-                    
-                    <Separator />
-                    
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-5 w-5 text-green-500" />
-                        <span className="font-medium">Ngày phát hành</span>
-                      </div>
-                      <span>{game.releaseDate}</span>
-                    </div>
-                    
-                    <Separator />
-                    
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center gap-2">
-                        <Gamepad2 className="h-5 w-5 text-purple-500" />
-                        <span className="font-medium">Nền tảng</span>
-                      </div>
-                      <div>
-                        {game.platforms.map((platform: string) => (
-                          <Badge key={platform} variant="outline" className="mr-1">
-                            {platform}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                    
-                    <Separator />
-                    
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center gap-2">
-                        <Server className="h-5 w-5 text-red-500" />
-                        <span className="font-medium">Dung lượng</span>
-                      </div>
-                      <span>{game.fileSize}</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-          
-          {/* Screenshots */}
-          <div className="space-y-4">
-            <h2 className="text-2xl font-bold">Screenshots</h2>
-            {game.screenshots && game.screenshots.length > 0 ? (
-              <ImageGallery
-                images={game.screenshots.map((url: string) => ({ url }))}
-                aspectRatio="video"
-              />
-            ) : (
-              <div className="aspect-video w-full overflow-hidden rounded-lg">
-                <img 
-                  src={game.thumbnailUrl || '/placeholder.svg'} 
-                  alt={`${game.title} screenshot`}
-                  className="w-full h-full object-cover"
+          </Button>
+        </div>
+  
+        <div className="container relative z-10 h-full flex flex-col justify-end pb-12">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-end">
+            <div className="hidden md:block">
+              <div className="rounded-lg overflow-hidden shadow-2xl border-2 border-background/50 relative transform transition-transform hover:scale-[1.02]" style={{ height: "380px" }}>
+                <Image
+                  src={getCoverImage()}
+                  alt={game.title}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, (max-width: 1024px) 33vw, 25vw"
+                  priority
                 />
+                
+                {game.trailer_url && (
+                  <div className="absolute inset-0 bg-black/30 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <Button 
+                      variant="default" 
+                      className="shadow-xl gap-2 rounded-full px-5 bg-primary/90 hover:bg-primary/100"
+                      asChild
+                    >
+                      <a href={game.trailer_url} target="_blank" rel="noopener noreferrer" aria-label="Xem trailer">
+                        <Play className="h-5 w-5" />
+                        <span>Xem trailer</span>
+                      </a>
+                    </Button>
+                  </div>
+                )}
               </div>
-            )}
+            </div>
+
+            <div className="md:col-span-2">
+              <div className="flex flex-wrap gap-2 mb-3">
+                {Array.isArray(game.platform) && game.platform.map((p: string) => (
+                  <Badge key={p} variant="secondary" className="shadow-sm">{getPlatformDisplayName(p)}</Badge>
+                ))}
+                {game.featured && (
+                  <Badge variant="default" className="bg-amber-500 hover:bg-amber-600 shadow-sm">
+                    Game nổi bật
+                  </Badge>
+                )}
+              </div>
+
+              <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-3">{game.title}</h1>
+
+              <div className="flex items-center gap-3 mb-4">
+                <div className="flex">{renderStars(game.rating || 0)}</div>
+                <span className="font-medium">({game.rating ? game.rating.toFixed(1) : "0.0"})</span>
+              </div>
+
+              <div className="flex flex-wrap gap-2 mb-6">
+                {Array.isArray(game.genre) && game.genre.map((g: string) => (
+                  <Badge key={g} variant="outline" className="bg-background/30 backdrop-blur-sm shadow-sm">
+                    {getGenreDisplayName(g)}
+                  </Badge>
+                ))}
+              </div>
+
+              <div className="flex flex-wrap gap-3">
+                <Button className="bg-primary hover:bg-primary/90 shadow-md">
+                  <Download className="mr-2 h-4 w-4" />
+                  Tải Game
+                </Button>
+
+                <Button variant="outline" className="bg-background/30 backdrop-blur-sm hover:bg-background/50">
+                  <Heart className="mr-2 h-4 w-4" />
+                  Yêu thích
+                </Button>
+
+                <Button variant="outline" className="bg-background/30 backdrop-blur-sm hover:bg-background/50">
+                  <Share2 className="mr-2 h-4 w-4" />
+                  Chia sẻ
+                </Button>
+
+                {game.official_website && (
+                  <Button variant="outline" className="bg-background/30 backdrop-blur-sm hover:bg-background/50" asChild>
+                    <a href={game.official_website} target="_blank" rel="noopener noreferrer">
+                      <Globe className="mr-2 h-4 w-4" />
+                      Website
+                    </a>
+                  </Button>
+                )}
+              </div>
+            </div>
           </div>
-          
-          {/* Tabs */}
-          <Tabs defaultValue="overview" value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid grid-cols-3 w-full md:w-auto">
-              <TabsTrigger value="overview">Tổng quan</TabsTrigger>
-              <TabsTrigger value="requirements">Cấu hình</TabsTrigger>
-              <TabsTrigger value="reviews">Đánh giá ({gameReviews.length})</TabsTrigger>
+        </div>
+      </div>
+
+      <main className="flex-1 bg-background">
+        <div className="container py-8">
+
+          {/* Mobile cover - visible only on mobile */}
+          <div className="block md:hidden mb-6">
+            <div className="rounded-lg overflow-hidden shadow-xl relative bg-muted" style={{ height: "220px" }}>
+              <Image
+                src={getCoverImage()}
+                alt={game.title}
+                fill
+                className="object-cover"
+                sizes="100vw"
+                priority
+              />
+
+              {game.trailer_url && (
+                <div className="absolute inset-0 bg-black/30 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <Button 
+                    variant="default" 
+                    className="shadow-xl gap-2 rounded-full px-5 bg-primary/90 hover:bg-primary/100"
+                    asChild
+                  >
+                    <a href={game.trailer_url} target="_blank" rel="noopener noreferrer" aria-label="Xem trailer">
+                      <Play className="h-5 w-5" />
+                      <span>Xem trailer</span>
+                    </a>
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Quick info grid */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            {/* Game info cards */}
+            <Card className="bg-card/50 backdrop-blur-sm shadow-md border-muted">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3 py-3">
+                  <div className="bg-primary/10 p-2 rounded-full">
+                    <Users className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold">Nhà phát triển</p>
+                    <p className="text-sm text-muted-foreground">{game.developer || 'N/A'}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-card/50 backdrop-blur-sm shadow-md border-muted">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3 py-3">
+                  <div className="bg-primary/10 p-2 rounded-full">
+                    <Gamepad2 className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold">Nhà phát hành</p>
+                    <p className="text-sm text-muted-foreground">{game.publisher || 'N/A'}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-card/50 backdrop-blur-sm shadow-md border-muted">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3 py-3">
+                  <div className="bg-primary/10 p-2 rounded-full">
+                    <Calendar className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold">Ngày phát hành</p>
+                    <p className="text-sm text-muted-foreground">{formatReleaseDate(game.release_date)}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-card/50 backdrop-blur-sm shadow-md border-muted">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3 py-3">
+                  <div className="bg-primary/10 p-2 rounded-full">
+                    <Download className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold">Lượt tải</p>
+                    <p className="text-sm text-muted-foreground">{(game.downloads || 0).toLocaleString()}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Description Section */}
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold mb-4">Mô tả</h2>
+            <Card className="bg-card/50 backdrop-blur-sm shadow-md border-muted">
+              <CardContent className="p-6">
+                <p className="text-muted-foreground leading-relaxed">{game.description || 'Không có mô tả.'}</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Game details tabs */}
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid grid-cols-4 h-auto p-1 mb-8 bg-muted/50 backdrop-blur-sm shadow-md rounded-lg">
+              <TabsTrigger value="overview" className="py-3 data-[state=active]:shadow-md">
+                <Info className="h-4 w-4 mr-2 md:mr-2" />
+                <span className="hidden md:inline">Chi tiết</span>
+              </TabsTrigger>
+              <TabsTrigger value="screenshots" className="py-3 data-[state=active]:shadow-md">
+                <ImageIcon className="h-4 w-4 mr-2 md:mr-2" />
+                <span className="hidden md:inline">Hình ảnh</span>
+              </TabsTrigger>
+              <TabsTrigger value="requirements" className="py-3 data-[state=active]:shadow-md">
+                <Laptop className="h-4 w-4 mr-2 md:mr-2" />
+                <span className="hidden md:inline">Cấu hình</span>
+              </TabsTrigger>
+              <TabsTrigger value="reviews" className="py-3 data-[state=active]:shadow-md">
+                <MessageSquare className="h-4 w-4 mr-2 md:mr-2" />
+                <span className="hidden md:inline">Đánh giá</span>
+              </TabsTrigger>
             </TabsList>
-            
-            <TabsContent value="overview" className="space-y-6 mt-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="md:col-span-2 space-y-6">
-                  <div>
-                    <h3 className="text-xl font-bold mb-3">Giới thiệu game</h3>
-                    <p className="text-muted-foreground">{game.description}</p>
-                    <p className="text-muted-foreground mt-4">
-                      {game.title} là một trò chơi {game.genre.join(", ")} đầy hấp dẫn được phát triển 
-                      bởi {game.developer} và phát hành bởi {game.publisher}. Trò chơi đưa người chơi 
-                      vào một thế giới đầy những thử thách và phiêu lưu mới.
-                    </p>
-                  </div>
-                  
-                  <div>
-                    <h3 className="text-xl font-bold mb-3">Tính năng nổi bật</h3>
-                    <ul className="space-y-2 text-muted-foreground list-disc pl-5">
-                      <li>Đồ họa ấn tượng với chi tiết cao và hiệu ứng ánh sáng chân thực</li>
-                      <li>Cốt truyện hấp dẫn với nhiều nhánh lựa chọn ảnh hưởng đến kết thúc game</li>
-                      <li>Hệ thống chiến đấu đầy thử thách đòi hỏi kỹ năng và chiến thuật</li>
-                      <li>Thế giới mở rộng lớn với nhiều khu vực khám phá và nhiệm vụ phụ</li>
-                      <li>Hệ thống phát triển nhân vật sâu với nhiều kỹ năng và trang bị</li>
-                    </ul>
-                  </div>
-                </div>
-                
-                <div>
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Tags</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex flex-wrap gap-2">
-                        {game.tags.map((tag: string) => (
-                          <Badge key={tag} variant="outline">{tag}</Badge>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                  
-                  <Card className="mt-6">
-                    <CardHeader>
-                      <CardTitle>Thông tin phát hành</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-2">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Phát triển:</span>
-                        <span>{game.developer}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Phát hành:</span>
-                        <span>{game.publisher}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Ngày phát hành:</span>
-                        <span>{game.releaseDate}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Nền tảng:</span>
-                        <span>{game.platforms.join(", ")}</span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="requirements" className="space-y-6 mt-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center">
-                      <Laptop className="h-5 w-5 mr-2" />
-                      Cấu hình tối thiểu
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Hệ điều hành:</span>
-                        <span>{game.systemRequirements.minimum.os}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Bộ xử lý:</span>
-                        <span>{game.systemRequirements.minimum.processor}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Bộ nhớ:</span>
-                        <span>{game.systemRequirements.minimum.memory}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Card đồ họa:</span>
-                        <span>{game.systemRequirements.minimum.graphics}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Lưu trữ:</span>
-                        <span>{game.systemRequirements.minimum.storage}</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center">
-                      <Laptop className="h-5 w-5 mr-2" />
-                      Cấu hình đề nghị
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Hệ điều hành:</span>
-                        <span>{game.systemRequirements.recommended.os}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Bộ xử lý:</span>
-                        <span>{game.systemRequirements.recommended.processor}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Bộ nhớ:</span>
-                        <span>{game.systemRequirements.recommended.memory}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Card đồ họa:</span>
-                        <span>{game.systemRequirements.recommended.graphics}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Lưu trữ:</span>
-                        <span>{game.systemRequirements.recommended.storage}</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-              
-              <Card>
+
+            <TabsContent value="overview" className="mt-2 focus-visible:outline-none focus-visible:ring-0">
+              <Card className="bg-card/50 backdrop-blur-sm shadow-md border-muted">
                 <CardHeader>
-                  <CardTitle>Ghi chú thêm</CardTitle>
+                  <CardTitle>Chi tiết game</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-muted-foreground">
-                    Game yêu cầu kết nối internet để tải về và xác thực. Một số tính năng trong game như chế độ nhiều người chơi 
-                    yêu cầu kết nối internet ổn định. Khuyến nghị sử dụng tai nghe để có trải nghiệm âm thanh tốt nhất.
-                  </p>
+                  <div className="prose max-w-none dark:prose-invert"
+                    dangerouslySetInnerHTML={{ __html: game.content || "Không có thông tin chi tiết" }}>
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
-            
-            <TabsContent value="reviews" className="space-y-6 mt-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="md:col-span-2 space-y-6">
-                  <h3 className="text-xl font-bold">Đánh giá từ người chơi</h3>
-                  
-                  {gameReviews.length > 0 ? (
-                    <div className="space-y-4">
-                      {gameReviews.map(review => (
-                        <Card key={review.id}>
-                          <CardContent className="p-4">
-                            <div className="flex items-start gap-3">
-                              <Avatar className="mt-1">
-                                <AvatarImage src={review.avatar} alt={review.author} />
-                                <AvatarFallback>{review.author[0]}</AvatarFallback>
-                              </Avatar>
-                              <div className="flex-1">
-                                <div className="flex justify-between items-start">
-                                  <div>
-                                    <span className="font-medium">{review.author}</span>
-                                    <span className="text-xs text-muted-foreground ml-2">{review.date}</span>
-                                  </div>
-                                  <div className="flex">
-                                    {renderStars(review.rating)}
-                                  </div>
+
+            <TabsContent value="screenshots" className="mt-2 focus-visible:outline-none focus-visible:ring-0">
+              <Card className="bg-card/50 backdrop-blur-sm shadow-md border-muted">
+                <CardHeader>
+                  <CardTitle>Thư viện hình ảnh</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {game.gameImages && Array.isArray(game.gameImages) && game.gameImages.length > 0 ? (
+                    <div>
+                      {/* Main selected image */}
+                      <div
+                        className="mb-4 rounded-lg overflow-hidden shadow-xl relative bg-muted cursor-pointer"
+                        onClick={() => setShowImageGallery(true)}
+                        style={{ height: "400px" }}
+                      >
+                        <Image
+                          src={game.gameImages[activeScreenshot]?.url || "/placeholder.svg"}
+                          alt={game.gameImages[activeScreenshot]?.caption || `Screenshot ${activeScreenshot + 1}`}
+                          fill
+                          className="object-contain"
+                          sizes="(max-width: 1024px) 100vw, 1024px"
+                        />
+                        <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition-colors flex items-center justify-center opacity-0 hover:opacity-100">
+                          <div className="bg-black/50 rounded-full p-2">
+                            <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white">
+                              <path d="M13.3536 7.35355C13.5488 7.15829 13.5488 6.84171 13.3536 6.64645L10.1716 3.46447C9.97631 3.2692 9.65973 3.2692 9.46447 3.46447C9.2692 3.65973 9.2692 3.97631 9.46447 4.17157L12.2929 7L9.46447 9.82843C9.2692 10.0237 9.2692 10.3403 9.46447 10.5355C9.65973 10.7308 9.97631 10.7308 10.1716 10.5355L13.3536 7.35355ZM1.64645 7.5H13V6.5H1.64645V7.5Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd"></path>
+                            </svg>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Thumbnail gallery */}
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
+                        {game.gameImages.map((image: any, index: number) => (
+                          <div
+                            key={image.id || index}
+                            className={`rounded-md overflow-hidden bg-muted relative cursor-pointer transition-all ${index === activeScreenshot ? 'ring-2 ring-primary ring-offset-2' : 'hover:opacity-80'
+                              }`}
+                            onClick={() => setActiveScreenshot(index)}
+                            style={{ height: "70px" }}
+                          >
+                            <Image
+                              src={image.url || "/placeholder.svg"}
+                              alt={image.caption || `Thumbnail ${index + 1}`}
+                              fill
+                              className="object-cover"
+                              sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 16vw"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">
+                      <ImageIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <p className="text-muted-foreground">Không có hình ảnh game</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="requirements" className="mt-2 focus-visible:outline-none focus-visible:ring-0">
+              <Card className="bg-card/50 backdrop-blur-sm shadow-md border-muted">
+                <CardHeader>
+                  <CardTitle>Cấu hình yêu cầu</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {game.system_requirements ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Minimum Requirements */}
+                      <Card className="border border-muted shadow-sm">
+                        <CardHeader className="bg-muted/30 pb-2">
+                          <CardTitle className="text-lg">Cấu hình tối thiểu</CardTitle>
+                        </CardHeader>
+                        <CardContent className="pt-4">
+                          {systemRequirements.windows?.min ? (
+                            <dl className="space-y-3">
+                              {Object.entries(systemRequirements.windows.min).map(([key, value]) => (
+                                <div key={key} className="grid grid-cols-[120px_1fr] gap-2">
+                                  <dt className="font-medium text-sm">{key.charAt(0).toUpperCase() + key.slice(1)}</dt>
+                                  <dd className="text-sm text-muted-foreground">{String(value)}</dd>
                                 </div>
-                                <p className="mt-2">{review.content}</p>
-                                <div className="flex items-center gap-4 mt-2">
-                                  <Button variant="ghost" size="sm" className="h-8">
-                                    <Heart className="h-3 w-3 mr-1" />
-                                    <span className="text-xs">{review.likes}</span>
-                                  </Button>
-                                  <Button variant="ghost" size="sm" className="h-8">
-                                    <MessageSquare className="h-3 w-3 mr-1" />
-                                    <span className="text-xs">Trả lời</span>
-                                  </Button>
+                              ))}
+                            </dl>
+                          ) : systemRequirements.minimum ? (
+                            <dl className="space-y-3">
+                              {Object.entries(systemRequirements.minimum).map(([key, value]) => (
+                                <div key={key} className="grid grid-cols-[120px_1fr] gap-2">
+                                  <dt className="font-medium text-sm">{key.charAt(0).toUpperCase() + key.slice(1)}</dt>
+                                  <dd className="text-sm text-muted-foreground">{String(value)}</dd>
+                                </div>
+                              ))}
+                            </dl>
+                          ) : (
+                            <p className="text-muted-foreground">Không có thông tin</p>
+                          )}
+                        </CardContent>
+                      </Card>
+
+                      {/* Recommended Requirements */}
+                      <Card className="border border-muted shadow-sm">
+                        <CardHeader className="bg-muted/30 pb-2">
+                          <CardTitle className="text-lg">Cấu hình đề nghị</CardTitle>
+                        </CardHeader>
+                        <CardContent className="pt-4">
+                          {systemRequirements.windows?.rec ? (
+                            <dl className="space-y-3">
+                              {Object.entries(systemRequirements.windows.rec).map(([key, value]) => (
+                                <div key={key} className="grid grid-cols-[120px_1fr] gap-2">
+                                  <dt className="font-medium text-sm">{key.charAt(0).toUpperCase() + key.slice(1)}</dt>
+                                  <dd className="text-sm text-muted-foreground">{String(value)}</dd>
+                                </div>
+                              ))}
+                            </dl>
+                          ) : systemRequirements.recommended ? (
+                            <dl className="space-y-3">
+                              {Object.entries(systemRequirements.recommended).map(([key, value]) => (
+                                <div key={key} className="grid grid-cols-[120px_1fr] gap-2">
+                                  <dt className="font-medium text-sm">{key.charAt(0).toUpperCase() + key.slice(1)}</dt>
+                                  <dd className="text-sm text-muted-foreground">{String(value)}</dd>
+                                </div>
+                              ))}
+                            </dl>
+                          ) : (
+                            <p className="text-muted-foreground">Không có thông tin</p>
+                          )}
+                        </CardContent>
+                      </Card>
+
+                      {/* Additional Requirements or General Requirements */}
+                      {(systemRequirements.additional || systemRequirements.windows?.additional || (!systemRequirements.windows?.min && !systemRequirements.windows?.rec && !systemRequirements.minimum && !systemRequirements.recommended)) && (
+                        <Card className="border border-muted shadow-sm md:col-span-2">
+                          <CardHeader className="bg-muted/30 pb-2">
+                            <CardTitle className="text-lg">Thông tin bổ sung</CardTitle>
+                          </CardHeader>
+                          <CardContent className="pt-4">
+                            {typeof systemRequirements.additional === 'string' ? (
+                              <div className="prose max-w-none dark:prose-invert"
+                                dangerouslySetInnerHTML={{ __html: systemRequirements.additional }}>
+                              </div>
+                            ) : systemRequirements.windows?.additional ? (
+                              <div className="prose max-w-none dark:prose-invert">
+                                <p>{systemRequirements.windows.additional}</p>
+                              </div>
+                            ) : (
+                              <pre className="bg-muted p-4 rounded-md overflow-x-auto text-sm">
+                                {JSON.stringify(systemRequirements, null, 2)}
+                              </pre>
+                            )}
+                          </CardContent>
+                        </Card>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">
+                      <Laptop className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <p className="text-muted-foreground">Không có thông tin cấu hình yêu cầu</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="reviews" className="mt-2 focus-visible:outline-none focus-visible:ring-0">
+              <Card className="bg-card/50 backdrop-blur-sm shadow-md border-muted">
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>Đánh giá từ cộng đồng</CardTitle>
+                    <CardDescription>Chia sẻ trải nghiệm của bạn với game này</CardDescription>
+                  </div>
+                  <Button>
+                    <MessageSquare className="h-4 w-4 mr-2" />
+                    Viết đánh giá
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  {gameReviews && gameReviews.length > 0 ? (
+                    <div className="space-y-6">
+                      {gameReviews.map((review) => (
+                        <Card key={review.id} className="border-0 border-b rounded-none last:border-0 bg-transparent">
+                          <CardHeader className="pb-2">
+                            <div className="flex justify-between items-start">
+                              <div className="flex items-center gap-3">
+                                <Avatar className="h-10 w-10 border">
+                                  <AvatarImage src={review.avatar} alt={review.author} />
+                                  <AvatarFallback className="bg-primary/10">{review.author.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                                <div>
+                                  <CardTitle className="text-base">{review.author}</CardTitle>
+                                  <CardDescription className="flex items-center gap-1">
+                                    <Clock className="h-3 w-3" />
+                                    {review.date}
+                                  </CardDescription>
                                 </div>
                               </div>
+                              <div className="flex">
+                                {renderStars(review.rating)}
+                              </div>
                             </div>
+                          </CardHeader>
+                          <CardContent>
+                            <p className="text-sm leading-relaxed">{review.content}</p>
                           </CardContent>
+                          <CardFooter className="flex justify-between">
+                            <Button variant="ghost" size="sm" className="gap-1">
+                              <Heart className="h-4 w-4" />
+                              <span>{review.likes}</span>
+                            </Button>
+                            <Button variant="ghost" size="sm">Trả lời</Button>
+                          </CardFooter>
                         </Card>
                       ))}
                     </div>
                   ) : (
-                    <Card>
-                      <CardContent className="p-6 text-center">
-                        <p className="text-muted-foreground">Chưa có đánh giá nào cho game này.</p>
-                      </CardContent>
-                    </Card>
+                    <div className="text-center py-12 bg-muted/30 rounded-lg">
+                      <MessageSquare className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <h3 className="text-lg font-medium mb-2">Chưa có đánh giá nào</h3>
+                      <p className="text-muted-foreground mb-6">Hãy là người đầu tiên đánh giá game này</p>
+                      <Button className="shadow-md">
+                        <MessageSquare className="h-4 w-4 mr-2" />
+                        Viết đánh giá
+                      </Button>
+                    </div>
                   )}
-                </div>
-                
-                <div>
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Đánh giá tổng quan</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                      <div className="flex items-center gap-4">
-                        <div className="text-4xl font-bold">{game.rating.toFixed(1)}</div>
-                        <div className="flex-1">
-                          <div className="flex mb-1">
-                            {renderStars(game.rating)}
-                          </div>
-                          <p className="text-sm text-muted-foreground">{game.reviews} đánh giá</p>
-                        </div>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        {[5, 4, 3, 2, 1].map(star => {
-                          const count = ratingCounts[star - 1]
-                          const percentage = gameReviews.length > 0 ? (count / gameReviews.length) * 100 : 0
-                          
-                          return (
-                            <div key={star} className="flex items-center gap-2">
-                              <div className="flex items-center w-10">
-                                <span className="text-sm">{star}</span>
-                                <Star className="h-3 w-3 fill-current ml-1" />
-                              </div>
-                              <Progress value={percentage} className="h-2 flex-1" />
-                              <span className="text-sm w-10 text-right">{count}</span>
-                            </div>
-                          )
-                        })}
-                      </div>
-                      
-                      <Button className="w-full">Viết đánh giá</Button>
-                    </CardContent>
-                  </Card>
-                  
-                  <Card className="mt-6">
-                    <CardHeader>
-                      <CardTitle>Thống kê</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Lượt tải:</span>
-                        <span>{game.players.toLocaleString()}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Đánh giá:</span>
-                        <span>{game.reviews}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Xếp hạng trung bình:</span>
-                        <div className="flex items-center">
-                          <span className="mr-1">{game.rating.toFixed(1)}</span>
-                          <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              </div>
+                </CardContent>
+              </Card>
             </TabsContent>
           </Tabs>
         </div>
-      </div>
+      </main>
+
+      <footer className="border-t py-8">
+        <div className="container flex flex-col items-center justify-between gap-4 md:flex-row">
+          <div className="flex items-center gap-2">
+            <p className="text-sm text-muted-foreground">
+              &copy; {new Date().getFullYear()} ZoneHub. All rights reserved.
+            </p>
+          </div>
+          <div className="flex gap-4">
+            <Button variant="ghost" size="icon" className="h-8 w-8">
+              <Heart className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8">
+              <Share2 className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8">
+              <Globe className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </footer>
+
+      {/* Image Gallery Modal */}
+      <Dialog open={showImageGallery} onOpenChange={setShowImageGallery}>
+        <DialogContent className="max-w-5xl w-[90vw] h-[85vh] max-h-[90vh] p-0 overflow-hidden bg-black/95">
+          {/* Visually hidden title for screen readers */}
+          <DialogTitle className="absolute w-[1px] h-[1px] p-0 -m-[1px] overflow-hidden clip-0 whitespace-nowrap border-0">
+            {game.gameImages && game.gameImages[activeScreenshot]?.caption || `Screenshot ${activeScreenshot + 1} for ${game.title}`}
+          </DialogTitle>
+
+          <div className="relative h-full w-full overflow-hidden">
+            {game.gameImages && Array.isArray(game.gameImages) && game.gameImages.length > 0 && (
+              <Image
+                src={game.gameImages[activeScreenshot]?.url || "/placeholder.svg"}
+                alt={game.gameImages[activeScreenshot]?.caption || `Screenshot ${activeScreenshot + 1}`}
+                fill
+                className="object-contain"
+                sizes="90vw"
+              />
+            )}
+
+            <DialogClose className="absolute top-2 right-2 bg-black/40 hover:bg-black/60 p-2 rounded-full">
+              <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-4">
+                <path d="M11.7816 4.03157C12.0062 3.80702 12.0062 3.44295 11.7816 3.2184C11.5571 2.99385 11.193 2.99385 10.9685 3.2184L7.50005 6.68682L4.03164 3.2184C3.80708 2.99385 3.44301 2.99385 3.21846 3.2184C2.99391 3.44295 2.99391 3.80702 3.21846 4.03157L6.68688 7.49999L3.21846 10.9684C2.99391 11.193 2.99391 11.557 3.21846 11.7816C3.44301 12.0061 3.80708 12.0061 4.03164 11.7816L7.50005 8.31316L10.9685 11.7816C11.193 12.0061 11.5571 12.0061 11.7816 11.7816C12.0062 11.557 12.0062 11.193 11.7816 10.9684L8.31322 7.49999L11.7816 4.03157Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd"></path>
+              </svg>
+            </DialogClose>
+
+            {activeScreenshot > 0 && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute left-2 top-1/2 transform -translate-y-1/2 h-10 w-10 rounded-full bg-black/40 hover:bg-black/60"
+                onClick={() => setActiveScreenshot(prev => prev - 1)}
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </Button>
+            )}
+
+            {game.gameImages && Array.isArray(game.gameImages) && activeScreenshot < game.gameImages.length - 1 && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 h-10 w-10 rounded-full bg-black/40 hover:bg-black/60"
+                onClick={() => setActiveScreenshot(prev => prev + 1)}
+              >
+                <ChevronLeft className="h-5 w-5 transform rotate-180" />
+              </Button>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 } 
