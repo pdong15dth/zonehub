@@ -1,12 +1,13 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useToast } from "@/components/ui/use-toast"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ThumbsUp } from "lucide-react"
+import { useSupabase } from "@/components/providers/supabase-provider"
 
 interface Comment {
   id: number
@@ -23,7 +24,7 @@ const DEMO_COMMENTS: Comment[] = [
   {
     id: 1,
     author: "Nguyễn Văn A",
-    avatar: "https://placekitten.com/40/40",
+    avatar: "/placeholder.svg",
     date: "16/07/2024",
     content: "Thông tin rất hữu ích! Cảm ơn tác giả đã chia sẻ.",
     likes: 5,
@@ -31,7 +32,7 @@ const DEMO_COMMENTS: Comment[] = [
       {
         id: 101,
         author: "Trần Thị B",
-        avatar: "https://placekitten.com/40/41",
+        avatar: "/placeholder.svg",
         date: "16/07/2024",
         content: "Tôi cũng thấy vậy, bài viết rất chi tiết.",
         likes: 2,
@@ -41,7 +42,7 @@ const DEMO_COMMENTS: Comment[] = [
   {
     id: 2,
     author: "Lê Văn C",
-    avatar: "https://placekitten.com/40/42",
+    avatar: "/placeholder.svg",
     date: "15/07/2024",
     content: "Bài viết hay, nhưng tôi muốn biết thêm về các tính năng khác nữa.",
     likes: 3,
@@ -57,20 +58,53 @@ export function CommentSection({ articleId }: CommentSectionProps) {
   const [comments, setComments] = useState<Comment[]>(DEMO_COMMENTS)
   const [commentContent, setCommentContent] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const { supabase, user } = useSupabase()
   const { toast } = useToast()
+  
+  // In a real implementation, we would fetch comments from the database
+  // useEffect(() => {
+  //   async function fetchComments() {
+  //     setIsLoading(true)
+  //     try {
+  //       const { data, error } = await supabase
+  //         .from('comments')
+  //         .select('*')
+  //         .eq('article_id', articleId)
+  //         .order('created_at', { ascending: false })
+  //       
+  //       if (error) throw error
+  //       setComments(data || [])
+  //     } catch (error) {
+  //       console.error('Error fetching comments:', error)
+  //     } finally {
+  //       setIsLoading(false)
+  //     }
+  //   }
+  //   
+  //   fetchComments()
+  // }, [articleId, supabase])
 
   const handleComment = async (e: React.FormEvent) => {
     e.preventDefault()
     
     if (!commentContent.trim()) return
     
-    setIsLoading(true)
+    if (!user) {
+      toast({
+        title: "Bạn cần đăng nhập",
+        description: "Vui lòng đăng nhập để bình luận",
+        variant: "destructive",
+        duration: 3000,
+      })
+      return
+    }
     
-    // Add comment to local state (for demo purposes)
+    // In a real implementation, we would submit the comment to the database
+    // For now, just add it to the local state
     const newComment: Comment = {
       id: Date.now(),
-      author: "Người dùng ẩn danh",
-      avatar: "https://placekitten.com/40/43",
+      author: user.email || "Anonymous User",
+      avatar: "/placeholder.svg",
       date: new Date().toLocaleDateString("vi-VN"),
       content: commentContent,
       likes: 0
@@ -78,7 +112,6 @@ export function CommentSection({ articleId }: CommentSectionProps) {
     
     setComments([newComment, ...comments])
     setCommentContent("")
-    setIsLoading(false)
     
     toast({
       title: "Bình luận đã được gửi",
@@ -167,20 +200,16 @@ export function CommentSection({ articleId }: CommentSectionProps) {
                     <ThumbsUp className="h-3 w-3 mr-1" />
                     {comment.likes} thích
                   </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="h-auto p-0 text-xs text-muted-foreground hover:text-primary"
-                  >
+                  <Button variant="ghost" size="sm" className="h-auto p-0 text-xs text-muted-foreground hover:text-primary">
                     Trả lời
                   </Button>
                 </div>
               </div>
             </div>
-            
+
             {/* Replies */}
             {comment.replies && comment.replies.length > 0 && (
-              <div className="ml-12 space-y-4">
+              <div className="pl-12 space-y-4">
                 {comment.replies.map(reply => (
                   <div key={reply.id} className="flex gap-4 items-start">
                     <Avatar className="h-8 w-8">
@@ -189,7 +218,7 @@ export function CommentSection({ articleId }: CommentSectionProps) {
                     </Avatar>
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="font-bold text-sm">{reply.author}</span>
+                        <span className="font-bold">{reply.author}</span>
                         <span className="text-xs text-muted-foreground">{reply.date}</span>
                       </div>
                       <p className="text-sm">{reply.content}</p>
@@ -202,13 +231,6 @@ export function CommentSection({ articleId }: CommentSectionProps) {
                         >
                           <ThumbsUp className="h-3 w-3 mr-1" />
                           {reply.likes} thích
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="h-auto p-0 text-xs text-muted-foreground hover:text-primary"
-                        >
-                          Trả lời
                         </Button>
                       </div>
                     </div>
