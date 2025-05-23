@@ -1,0 +1,99 @@
+[
+  {
+    "id": "game-1",
+    "title": "God of War Ragnarök",
+    "developer": "Santa Monica Studio",
+    "publisher": "Sony Interactive Entertainment",
+    "release_date": "09/11/2022",
+    "description": "Embark on an epic journey with Kratos and Atreus as they face the impending Ragnarök, meeting Norse gods and exploring the nine realms while deepening their complex father-son relationship.",
+    "content": "Chi tiết về game God of War Ragnarök...",
+    "system_requirements": "PlayStation 5, PlayStation 4",
+    "trailer_url": "https://www.youtube.com/watch?v=EE-4GvjKcfs",
+    "official_website": "https://www.playstation.com/games/god-of-war-ragnarok/",
+    "platform": ["ps5", "ps4"],
+    "genre": ["action", "adventure"],
+    "rating": 4.9,
+    "downloads": 12500000,
+    "status": "published",
+    "featured": true,
+    "image": "https://placekitten.com/800/600",
+    "gameImages": [
+      {
+        "id": "img_0",
+        "url": "https://placekitten.com/800/600",
+        "caption": "God of War Ragnarök Cover",
+        "is_primary": true,
+        "display_order": 0
+      },
+      {
+        "id": "img_1", 
+        "url": "https://placekitten.com/800/601",
+        "caption": "Gameplay Screenshot 1",
+        "is_primary": false,
+        "display_order": 1
+      }
+    ],
+    "created_at": "2024-01-15T10:00:00Z",
+    "updated_at": "2024-01-15T10:00:00Z"
+  },
+  {
+    "id": "game-2",
+    "title": "Elden Ring",
+    "developer": "FromSoftware",
+    "publisher": "Bandai Namco Entertainment",
+    "release_date": "25/02/2022",
+    "description": "An open-world action RPG created by FromSoftware and George R.R. Martin, set in the Lands Between after the shattering of the Elden Ring, where players must restore the ancient artifact and become the Elden Lord.",
+    "content": "Chi tiết về game Elden Ring...",
+    "system_requirements": "Windows 10, PlayStation 5, PlayStation 4, Xbox Series X/S, Xbox One",
+    "trailer_url": "https://www.youtube.com/watch?v=E3Huy2cdih0",
+    "official_website": "https://www.eldenring.com/",
+    "platform": ["ps5", "ps4", "xboxsx", "xboxone", "pc"],
+    "genre": ["rpg", "action"],
+    "rating": 4.8,
+    "downloads": 16500000,
+    "status": "published",
+    "featured": true,
+    "image": "https://placekitten.com/800/602",
+    "gameImages": [
+      {
+        "id": "img_0",
+        "url": "https://placekitten.com/800/602",
+        "caption": "Elden Ring Cover",
+        "is_primary": true,
+        "display_order": 0
+      }
+    ],
+    "created_at": "2024-01-16T10:00:00Z",
+    "updated_at": "2024-01-16T10:00:00Z"
+  },
+  {
+    "id": "game-3",
+    "title": "Hogwarts Legacy",
+    "developer": "Avalanche Software",
+    "publisher": "Warner Bros. Interactive Entertainment",
+    "release_date": "10/02/2023",
+    "description": "An open-world action RPG set in the 1800s wizarding world, allowing players to create their own character, attend Hogwarts, learn spells, brew potions, and explore familiar and new locations.",
+    "content": "Chi tiết về game Hogwarts Legacy...",
+    "system_requirements": "Multi-platform",
+    "trailer_url": "https://www.youtube.com/watch?v=1O6Qstncpnc",
+    "official_website": "https://www.hogwartslegacy.com/",
+    "platform": ["ps5", "ps4", "xboxsx", "xboxone", "pc", "switch"],
+    "genre": ["rpg", "adventure"],
+    "rating": 4.5,
+    "downloads": 15000000,
+    "status": "published",
+    "featured": false,
+    "image": "https://placekitten.com/800/603",
+    "gameImages": [
+      {
+        "id": "img_0",
+        "url": "https://placekitten.com/800/603", 
+        "caption": "Hogwarts Legacy Cover",
+        "is_primary": true,
+        "display_order": 0
+      }
+    ],
+    "created_at": "2024-01-17T10:00:00Z",
+    "updated_at": "2024-01-17T10:00:00Z"
+  }
+] 

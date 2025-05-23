@@ -1,0 +1,42 @@
+[
+  {
+    "id": "review-1",
+    "game_id": "game-1",
+    "rating": 5,
+    "content": "God of War Ragnarök thực sự là một kiệt tác! Cốt truyện hay, gameplay mượt mà và đồ họa tuyệt đẹp.",
+    "likes": 15,
+    "status": "published",
+    "created_at": "2024-01-15T12:00:00Z",
+    "updated_at": "2024-01-15T12:00:00Z"
+  },
+  {
+    "id": "review-2", 
+    "game_id": "game-1",
+    "rating": 4,
+    "content": "Game rất hay nhưng hơi khó ở một số boss fight. Nhìn chung vẫn rất xuất sắc!",
+    "likes": 8,
+    "status": "published",
+    "created_at": "2024-01-15T14:30:00Z",
+    "updated_at": "2024-01-15T14:30:00Z"
+  },
+  {
+    "id": "review-3",
+    "game_id": "game-2", 
+    "rating": 5,
+    "content": "Elden Ring là game RPG hay nhất mà tôi từng chơi. Open world rộng lớn và đầy bí ẩn.",
+    "likes": 22,
+    "status": "published",
+    "created_at": "2024-01-16T11:00:00Z",
+    "updated_at": "2024-01-16T11:00:00Z"
+  },
+  {
+    "id": "review-4",
+    "game_id": "game-3",
+    "rating": 4,
+    "content": "Hogwarts Legacy mang lại trải nghiệm phép thuật tuyệt vời cho fan Harry Potter.",
+    "likes": 12,
+    "status": "published", 
+    "created_at": "2024-01-17T16:20:00Z",
+    "updated_at": "2024-01-17T16:20:00Z"
+  }
+] 

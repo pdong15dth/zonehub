@@ -1,8 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { useSupabase } from "@/components/providers/supabase-provider"
 import { useToast } from "@/components/ui/use-toast"
 import {
   Card,
@@ -12,88 +10,93 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { MessageSquare } from "lucide-react"
-import { ReviewForm } from "./review-form"
-import { ReviewCard } from "./review-card"
-import { Dialog, DialogContent, DialogTitle, DialogClose } from "@/components/ui/dialog"
+import { MessageSquare, Star } from "lucide-react"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 interface GameReviewsProps {
   gameId: string
 }
 
+// Demo reviews data
+const DEMO_REVIEWS = [
+  {
+    id: 1,
+    gameId: "game-1",
+    user: {
+      name: "Nguyễn Văn A",
+      avatar: "https://placekitten.com/40/40"
+    },
+    rating: 5,
+    content: "Game tuyệt vời! Đồ họa đẹp và gameplay hấp dẫn. Đáng để đầu tư thời gian chơi.",
+    createdAt: "2024-01-15T12:00:00Z",
+    likes: 12
+  },
+  {
+    id: 2,
+    gameId: "game-1", 
+    user: {
+      name: "Trần Thị B",
+      avatar: "https://placekitten.com/40/41"
+    },
+    rating: 4,
+    content: "Gameplay hay nhưng hơi khó ở một số đoạn. Nhìn chung vẫn rất thú vị!",
+    createdAt: "2024-01-16T10:30:00Z",
+    likes: 8
+  },
+  {
+    id: 3,
+    gameId: "game-2",
+    user: {
+      name: "Lê Văn C", 
+      avatar: "https://placekitten.com/40/42"
+    },
+    rating: 5,
+    content: "Masterpiece! Một trong những game hay nhất mà tôi từng chơi.",
+    createdAt: "2024-01-17T15:20:00Z",
+    likes: 15
+  }
+]
+
 export function GameReviews({ gameId }: GameReviewsProps) {
-  const { user } = useSupabase()
-  const router = useRouter()
   const { toast } = useToast()
   
   const [reviews, setReviews] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [showReviewForm, setShowReviewForm] = useState(false)
-  const [showLoginPrompt, setShowLoginPrompt] = useState(false)
 
-  // Fetch reviews
+  // Filter reviews for this game
   useEffect(() => {
-    async function fetchReviews() {
-      try {
-        setLoading(true)
-        setError(null)
-        
-        const response = await fetch(`/api/reviews?gameId=${gameId}`)
-        
-        if (!response.ok) {
-          throw new Error("Không thể tải đánh giá")
-        }
-        
-        const data = await response.json()
-        setReviews(data)
-      } catch (error) {
-        console.error("Error fetching reviews:", error)
-        setError("Không thể tải đánh giá. Vui lòng thử lại sau.")
-      } finally {
-        setLoading(false)
-      }
-    }
-    
-    fetchReviews()
+    setLoading(true)
+    const gameReviews = DEMO_REVIEWS.filter(review => review.gameId === gameId)
+    setReviews(gameReviews)
+    setLoading(false)
   }, [gameId])
 
   const handleWriteReview = () => {
-    if (!user) {
-      setShowLoginPrompt(true)
-      return
+    toast({
+      title: "Tính năng đang phát triển",
+      description: "Chức năng viết đánh giá sẽ sớm được cập nhật trong phiên bản tiếp theo.",
+      duration: 3000,
+    })
+  }
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("vi-VN")
+  }
+
+  const renderStars = (rating: number) => {
+    const stars = []
+    for (let i = 1; i <= 5; i++) {
+      stars.push(
+        <Star
+          key={i}
+          className={`h-4 w-4 ${
+            i <= rating ? 'fill-yellow-500 text-yellow-500' : 'text-gray-300'
+          }`}
+        />
+      )
     }
-    
-    setShowReviewForm(true)
+    return stars
   }
-
-  const handleReviewSuccess = () => {
-    setShowReviewForm(false)
-    
-    // Re-fetch reviews to update the list
-    const fetchReviews = async () => {
-      try {
-        const response = await fetch(`/api/reviews?gameId=${gameId}`)
-        if (response.ok) {
-          const data = await response.json()
-          setReviews(data)
-        }
-      } catch (error) {
-        console.error("Error re-fetching reviews:", error)
-      }
-    }
-    
-    fetchReviews()
-  }
-
-  const handleLogin = () => {
-    router.push(`/auth/signin?callbackUrl=${encodeURIComponent(window.location.pathname)}`)
-  }
-
-  // Check if user has already submitted a review
-  const userHasReviewed = reviews.some(
-    review => review.userId === user?.id
-  )
 
   return (
     <div>
@@ -103,52 +106,47 @@ export function GameReviews({ gameId }: GameReviewsProps) {
             <CardTitle>Đánh giá từ cộng đồng</CardTitle>
             <CardDescription>Chia sẻ trải nghiệm của bạn với game này</CardDescription>
           </div>
-          {!userHasReviewed && (
-            <Button onClick={handleWriteReview}>
-              <MessageSquare className="h-4 w-4 mr-2" />
-              Viết đánh giá
-            </Button>
-          )}
+          <Button onClick={handleWriteReview}>
+            <MessageSquare className="h-4 w-4 mr-2" />
+            Viết đánh giá
+          </Button>
         </CardHeader>
         <CardContent>
-          {/* Review form */}
-          {showReviewForm && (
-            <div className="mb-8 p-4 bg-muted/30 rounded-lg shadow-sm">
-              <h3 className="text-lg font-medium mb-4">Viết đánh giá của bạn</h3>
-              <ReviewForm 
-                gameId={gameId}
-                isSignedIn={!!user}
-                onSuccess={handleReviewSuccess}
-                onCancel={() => setShowReviewForm(false)}
-              />
-            </div>
-          )}
-
-          {/* Reviews list */}
           {loading ? (
             <div className="flex justify-center py-12">
               <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full"></div>
             </div>
-          ) : error ? (
-            <div className="text-center py-8 text-red-500">
-              <p>{error}</p>
-              <Button variant="outline" className="mt-4" onClick={() => router.refresh()}>
-                Thử lại
-              </Button>
-            </div>
           ) : reviews.length > 0 ? (
             <div className="space-y-6">
               {reviews.map((review) => (
-                <ReviewCard 
-                  key={review.id} 
-                  review={review} 
-                  onReply={(reviewId) => {
-                    toast({
-                      title: "Tính năng đang phát triển",
-                      description: "Chức năng trả lời đánh giá sẽ sớm được cập nhật.",
-                    })
-                  }} 
-                />
+                <div key={review.id} className="border rounded-lg p-4 bg-muted/20">
+                  <div className="flex items-start gap-4">
+                    <Avatar>
+                      <AvatarImage src={review.user.avatar} alt={review.user.name} />
+                      <AvatarFallback>{review.user.name[0]}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="font-medium">{review.user.name}</span>
+                        <div className="flex items-center gap-1">
+                          {renderStars(review.rating)}
+                        </div>
+                        <span className="text-sm text-muted-foreground">
+                          {formatDate(review.createdAt)}
+                        </span>
+                      </div>
+                      <p className="text-sm mb-3">{review.content}</p>
+                      <div className="flex items-center gap-4">
+                        <Button variant="ghost" size="sm" className="h-auto p-0 text-xs">
+                          👍 {review.likes} hữu ích
+                        </Button>
+                        <Button variant="ghost" size="sm" className="h-auto p-0 text-xs">
+                          Trả lời
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               ))}
             </div>
           ) : (
@@ -164,26 +162,6 @@ export function GameReviews({ gameId }: GameReviewsProps) {
           )}
         </CardContent>
       </Card>
-
-      {/* Login prompt dialog */}
-      <Dialog open={showLoginPrompt} onOpenChange={setShowLoginPrompt}>
-        <DialogContent className="sm:max-w-md">
-          <DialogTitle>Đăng nhập để tiếp tục</DialogTitle>
-          <div className="py-4">
-            <p className="mb-4">Bạn cần đăng nhập để viết đánh giá.</p>
-            <div className="flex justify-end gap-2">
-              <DialogClose asChild>
-                <Button variant="outline">
-                  Hủy
-                </Button>
-              </DialogClose>
-              <Button onClick={handleLogin}>
-                Đăng nhập ngay
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 } 

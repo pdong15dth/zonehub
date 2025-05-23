@@ -64,15 +64,17 @@ export function ArticleActions({ articleId, initialLikes }: ArticleActionsProps)
   }
 
   const copyToClipboard = () => {
-    navigator.clipboard.writeText(window.location.href)
-    setCopySuccess(true)
-    setTimeout(() => setCopySuccess(false), 2000)
+    if (typeof window !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(window.location.href)
+      setCopySuccess(true)
+      setTimeout(() => setCopySuccess(false), 2000)
 
-    toast({
-      title: "Đã sao chép",
-      description: "Đường dẫn đã được sao chép vào clipboard.",
-      duration: 3000,
-    })
+      toast({
+        title: "Đã sao chép",
+        description: "Đường dẫn đã được sao chép vào clipboard.",
+        duration: 3000,
+      })
+    }
   }
 
   return (
@@ -103,7 +105,7 @@ export function ArticleActions({ articleId, initialLikes }: ArticleActionsProps)
         </Button>
         <Button variant="outline" size="icon" asChild>
           <a
-            href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`}
+            href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(typeof window !== 'undefined' ? window.location.href : '')}`}
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Share on Facebook"
@@ -113,7 +115,7 @@ export function ArticleActions({ articleId, initialLikes }: ArticleActionsProps)
         </Button>
         <Button variant="outline" size="icon" asChild>
           <a
-            href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(window.location.href)}`}
+            href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(typeof window !== 'undefined' ? window.location.href : '')}`}
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Share on Twitter"
@@ -123,7 +125,7 @@ export function ArticleActions({ articleId, initialLikes }: ArticleActionsProps)
         </Button>
         <Button variant="outline" size="icon" asChild>
           <a
-            href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.href)}`}
+            href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(typeof window !== 'undefined' ? window.location.href : '')}`}
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Share on LinkedIn"

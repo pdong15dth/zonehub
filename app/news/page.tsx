@@ -13,7 +13,7 @@ import {
   MessageSquare,
   Plus,
 } from "lucide-react"
-import { createServerSupabaseClient, Article } from "@/lib/supabase-server"
+import { articlesDb, Article } from "@/lib/json-db"
 import { formatDistanceToNow } from "date-fns"
 import { vi } from "date-fns/locale"
 
@@ -26,18 +26,13 @@ export const metadata = {
 export const revalidate = 30; // revalidate every 30 seconds
 
 export default async function NewsPage() {
-  // Fetch articles from Supabase
-  const supabase = createServerSupabaseClient();
+  // Fetch articles from JSON database
+  const { data: allArticles, error } = await articlesDb.select({
+    filter: (article) => article.status === 'published',
+    order: { field: 'publish_date', ascending: false }
+  });
   
-  // Fetch all published articles with their authors
-  const { data: articles, error } = await supabase
-    .from('articles')
-    .select(`
-      *,
-      author:author_id(id, full_name, email, avatar_url)
-    `)
-    .eq('status', 'published')
-    .order('publish_date', { ascending: false });
+  const articles = allArticles as Article[];
   
   // Check if we have articles
   const hasNews = articles && articles.length > 0;
@@ -113,12 +108,12 @@ export default async function NewsPage() {
                             </AvatarFallback>
                           </Avatar>
                           <span className="text-sm mr-3">
-                            {featuredArticles[0].author?.full_name || featuredArticles[0].author || 'Anonymous'}
+                            Anonymous
                           </span>
                           <Calendar className="h-4 w-4 mr-1" />
                           <span className="text-sm">
-                            {featuredArticles[0].published_at 
-                              ? formatDate(featuredArticles[0].published_at) 
+                            {featuredArticles[0].publish_date 
+                              ? formatDate(featuredArticles[0].publish_date) 
                               : formatDate(featuredArticles[0].created_at)}
                           </span>
                         </div>
@@ -146,12 +141,12 @@ export default async function NewsPage() {
                         <h3 className="text-sm font-bold line-clamp-1">{article.title}</h3>
                         <div className="flex items-center mt-2 text-xs">
                           <span className="mr-3">
-                            {article.author?.full_name || article.author || 'Anonymous'}
+                            Anonymous
                           </span>
                           <Calendar className="h-3 w-3 mr-1" />
                           <span>
-                            {article.published_at 
-                              ? formatDate(article.published_at) 
+                            {article.publish_date 
+                              ? formatDate(article.publish_date) 
                               : formatDate(article.created_at)}
                           </span>
                         </div>
@@ -201,7 +196,7 @@ export default async function NewsPage() {
                               
                               <h3 className="text-xl font-bold mb-2">{article.title}</h3>
                               <p className="text-muted-foreground text-sm mb-4">
-                                {article.summary || article.excerpt || ''}
+                                {article.summary || ''}
                               </p>
                             </div>
                             
@@ -215,11 +210,11 @@ export default async function NewsPage() {
                                 </Avatar>
                                 <div>
                                   <p className="text-sm font-medium">
-                                    {article.author?.full_name || article.author || 'Anonymous'}
+                                    Anonymous
                                   </p>
                                   <p className="text-xs text-muted-foreground">
-                                    {article.published_at 
-                                      ? formatDate(article.published_at) 
+                                    {article.publish_date 
+                                      ? formatDate(article.publish_date) 
                                       : formatDate(article.created_at)}
                                   </p>
                                 </div>
@@ -263,8 +258,8 @@ export default async function NewsPage() {
                         </h4>
                         <div className="flex items-center mt-1">
                           <span className="text-xs text-muted-foreground mr-3">
-                            {article.published_at 
-                              ? formatDate(article.published_at) 
+                            {article.publish_date 
+                              ? formatDate(article.publish_date) 
                               : formatDate(article.created_at)}
                           </span>
                           <div className="flex items-center text-xs text-muted-foreground">

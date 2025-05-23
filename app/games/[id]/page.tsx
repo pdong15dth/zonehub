@@ -1,5 +1,3 @@
-"use client"
-
 import { useState, useEffect } from "react"
 import { notFound, useRouter, useParams } from "next/navigation"
 import Link from "next/link"
@@ -44,90 +42,44 @@ import {
 import { MainNav } from "@/components/main-nav"
 import { ModeToggle } from "@/components/mode-toggle"
 import { UserNav } from "@/components/user-nav"
-import { useToast } from "@/components/ui/use-toast"
 import { Dialog, DialogContent, DialogClose, DialogTitle } from "@/components/ui/dialog"
 import { GameReviews } from "@/components/games/game-reviews"
-import { AuthRedirect } from "@/components/providers/auth-redirect"
+import { gamesDb, Game } from "@/lib/json-db"
 
-export default function GameDetailPage() {
-  const params = useParams();
-  const router = useRouter();
-  const { toast } = useToast();
+interface PageProps {
+  params: Promise<{
+    id: string
+  }>
+}
 
-  const id = params?.id as string;
+export async function generateStaticParams() {
+  // Fetch all games to generate static paths
+  const { data: games } = await gamesDb.select();
+  
+  if (!games || !Array.isArray(games)) {
+    return []
+  }
+  
+  return games.map((game: any) => ({
+    id: game.id
+  }))
+}
 
-  const [game, setGame] = useState<any>(null)
-  const [activeTab, setActiveTab] = useState("overview")
-  const [activeScreenshot, setActiveScreenshot] = useState(0)
-  const [showImageGallery, setShowImageGallery] = useState(false)
-  const [gameReviews, setGameReviews] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [scrolled, setScrolled] = useState(false)
+export default async function GameDetailPage({ params }: PageProps) {
+  const { id } = await params;
 
-  useEffect(() => {
-    const handleScroll = () => {
-      if (window.scrollY > 100) {
-        setScrolled(true);
-      } else {
-        setScrolled(false);
-      }
-    };
-    
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  // Fetch game data directly from JSON database
+  const { data: gameData, error } = await gamesDb.select({
+    eq: { field: 'id', value: id },
+    single: true
+  });
 
-  useEffect(() => {
-    async function fetchGameDetails() {
-      try {
-        setLoading(true);
-        setError(null);
+  if (error || !gameData) {
+    console.error('Error fetching game details:', error);
+    return notFound();
+  }
 
-        // Fetch game data from API
-        const response = await fetch(`/api/games/${id}`);
-
-        console.log("Game details response:", response);
-
-        if (!response.ok) {
-          if (response.status === 404) {
-            throw new Error('Game not found');
-          }
-          throw new Error(`Error: ${response.status}`);
-        }
-
-        const gameData = await response.json();
-        console.log("Game details response:", gameData);
-
-        if (!gameData || !gameData.id) {
-          throw new Error('Invalid game data received');
-        }
-
-        setGame(gameData);
-
-        // TODO: Fetch reviews for this game when available
-        // const reviewsResponse = await fetch(`/api/games/${id}/reviews`);
-        // const reviewsData = await reviewsResponse.json();
-        // setGameReviews(reviewsData);
-
-      } catch (error) {
-        console.error('Error fetching game details:', error);
-        setError(error instanceof Error ? error.message : 'Failed to load game details');
-
-        toast({
-          title: "Error",
-          description: "Failed to load game details. Please try again later.",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    if (id) {
-      fetchGameDetails();
-    }
-  }, [id, toast]);
+  const game = gameData as Game;
 
   // Parse system requirements JSON
   const parseSystemRequirements = (requirementsString: string | null) => {
@@ -239,68 +191,8 @@ export default function GameDetailPage() {
     }
   };
 
-  // Hiển thị loading state
-  if (loading) {
-    return (
-      <div className="flex min-h-screen flex-col">
-        <AuthRedirect />
-        <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-          <div className="container flex h-16 items-center justify-between">
-            <MainNav />
-            <div className="flex items-center gap-2">
-              <ModeToggle />
-              <UserNav />
-            </div>
-          </div>
-        </header>
-        <main className="flex-1">
-          <div className="container mx-auto py-12 text-center">
-            <div className="flex justify-center items-center h-64 flex-col gap-4">
-              <div className="relative w-20 h-20">
-                <div className="absolute top-0 left-0 w-full h-full rounded-full border-4 border-t-primary border-l-transparent border-r-transparent border-b-transparent animate-spin"></div>
-                <div className="absolute top-1 left-1 w-[calc(100%-8px)] h-[calc(100%-8px)] rounded-full border-4 border-t-transparent border-l-transparent border-r-primary border-b-transparent animate-spin"></div>
-                <Gamepad2 className="h-8 w-8 text-primary absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
-              </div>
-              <p className="text-xl font-medium">Đang tải thông tin game...</p>
-            </div>
-          </div>
-        </main>
-      </div>
-    );
-  }
-
-  // Hiển thị lỗi nếu có
-  if (error || !game) {
-    return (
-      <div className="flex min-h-screen flex-col">
-        <AuthRedirect />
-        <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-          <div className="container flex h-16 items-center justify-between">
-            <MainNav />
-            <div className="flex items-center gap-2">
-              <ModeToggle />
-              <UserNav />
-            </div>
-          </div>
-        </header>
-        <main className="flex-1">
-          <div className="container mx-auto py-12 text-center">
-            <div className="p-8 border rounded-lg max-w-md mx-auto shadow-lg">
-              <h2 className="text-2xl font-semibold mb-4">Không tìm thấy game</h2>
-              <p className="text-muted-foreground mb-6">{error || "Game không tồn tại hoặc đã bị xóa."}</p>
-              <Button onClick={() => router.push('/games')}>
-                <ChevronLeft className="mr-2 h-4 w-4" />
-                Quay lại danh sách games
-              </Button>
-            </div>
-          </div>
-        </main>
-      </div>
-    );
-  }
-
   // Extract system requirements
-  const systemRequirements = parseSystemRequirements(game.system_requirements);
+  const systemRequirements = parseSystemRequirements(game.system_requirements ?? null);
 
   // Get game cover image
   const getCoverImage = () => {
@@ -326,7 +218,6 @@ export default function GameDetailPage() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <AuthRedirect />
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 items-center justify-between">
           <MainNav />
@@ -351,22 +242,16 @@ export default function GameDetailPage() {
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent"></div>
         
         {/* Back button - floating */}
-        <div className={`fixed top-24 left-4 z-50 transition-all duration-300 ${
-          scrolled ? 'scale-100 opacity-100' : 'scale-95 opacity-90'
-        }`}>
+        <div className="fixed top-24 left-4 z-50 transition-all duration-300">
           <Button 
             variant="outline" 
             size="sm" 
-            className={`rounded-full shadow-lg backdrop-blur-md hover:bg-background/90 px-4 transition-all duration-300 ${
-              scrolled 
-                ? 'bg-primary/90 hover:bg-primary text-primary-foreground' 
-                : 'bg-background/70'
-            }`}
+            className="rounded-full shadow-lg backdrop-blur-md hover:bg-background/90 px-4 transition-all duration-300 bg-background/70"
             asChild
           >
             <Link href="/games">
               <ChevronLeft className="mr-2 h-4 w-4" />
-              <span>{scrolled ? 'Quay lại danh sách' : 'Quay lại'}</span>
+              <span>Quay lại</span>
             </Link>
           </Button>
         </div>
@@ -460,36 +345,6 @@ export default function GameDetailPage() {
 
       <main className="flex-1 bg-background">
         <div className="container py-8">
-
-          {/* Mobile cover - visible only on mobile */}
-          <div className="block md:hidden mb-6">
-            <div className="rounded-lg overflow-hidden shadow-xl relative bg-muted" style={{ height: "220px" }}>
-              <Image
-                src={getCoverImage()}
-                alt={game.title}
-                fill
-                className="object-cover"
-                sizes="100vw"
-                priority
-              />
-
-              {game.trailer_url && (
-                <div className="absolute inset-0 bg-black/30 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <Button 
-                    variant="default" 
-                    className="shadow-xl gap-2 rounded-full px-5 bg-primary/90 hover:bg-primary/100"
-                    asChild
-                  >
-                    <a href={game.trailer_url} target="_blank" rel="noopener noreferrer" aria-label="Xem trailer">
-                      <Play className="h-5 w-5" />
-                      <span>Xem trailer</span>
-                    </a>
-                  </Button>
-                </div>
-              )}
-            </div>
-          </div>
-
           {/* Quick info grid */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             {/* Game info cards */}
@@ -561,7 +416,7 @@ export default function GameDetailPage() {
           </div>
 
           {/* Game details tabs */}
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <Tabs defaultValue="overview" className="w-full">
             <TabsList className="grid grid-cols-4 h-auto p-1 mb-8 bg-muted/50 backdrop-blur-sm shadow-md rounded-lg">
               <TabsTrigger value="overview" className="py-3 data-[state=active]:shadow-md">
                 <Info className="h-4 w-4 mr-2 md:mr-2" />
@@ -605,23 +460,15 @@ export default function GameDetailPage() {
                       {/* Main selected image */}
                       <div
                         className="mb-4 rounded-lg overflow-hidden shadow-xl relative bg-muted cursor-pointer"
-                        onClick={() => setShowImageGallery(true)}
                         style={{ height: "400px" }}
                       >
                         <Image
-                          src={game.gameImages[activeScreenshot]?.url || "/placeholder.svg"}
-                          alt={game.gameImages[activeScreenshot]?.caption || `Screenshot ${activeScreenshot + 1}`}
+                          src={game.gameImages[0]?.url || "/placeholder.svg"}
+                          alt={game.gameImages[0]?.caption || `Screenshot 1`}
                           fill
                           className="object-contain"
                           sizes="(max-width: 1024px) 100vw, 1024px"
                         />
-                        <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition-colors flex items-center justify-center opacity-0 hover:opacity-100">
-                          <div className="bg-black/50 rounded-full p-2">
-                            <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white">
-                              <path d="M13.3536 7.35355C13.5488 7.15829 13.5488 6.84171 13.3536 6.64645L10.1716 3.46447C9.97631 3.2692 9.65973 3.2692 9.46447 3.46447C9.2692 3.65973 9.2692 3.97631 9.46447 4.17157L12.2929 7L9.46447 9.82843C9.2692 10.0237 9.2692 10.3403 9.46447 10.5355C9.65973 10.7308 9.97631 10.7308 10.1716 10.5355L13.3536 7.35355ZM1.64645 7.5H13V6.5H1.64645V7.5Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd"></path>
-                            </svg>
-                          </div>
-                        </div>
                       </div>
 
                       {/* Thumbnail gallery */}
@@ -629,9 +476,7 @@ export default function GameDetailPage() {
                         {game.gameImages.map((image: any, index: number) => (
                           <div
                             key={image.id || index}
-                            className={`rounded-md overflow-hidden bg-muted relative cursor-pointer transition-all ${index === activeScreenshot ? 'ring-2 ring-primary ring-offset-2' : 'hover:opacity-80'
-                              }`}
-                            onClick={() => setActiveScreenshot(index)}
+                            className="rounded-md overflow-hidden bg-muted relative"
                             style={{ height: "70px" }}
                           >
                             <Image
@@ -722,30 +567,6 @@ export default function GameDetailPage() {
                           )}
                         </CardContent>
                       </Card>
-
-                      {/* Additional Requirements or General Requirements */}
-                      {(systemRequirements.additional || systemRequirements.windows?.additional || (!systemRequirements.windows?.min && !systemRequirements.windows?.rec && !systemRequirements.minimum && !systemRequirements.recommended)) && (
-                        <Card className="border border-muted shadow-sm md:col-span-2">
-                          <CardHeader className="bg-muted/30 pb-2">
-                            <CardTitle className="text-lg">Thông tin bổ sung</CardTitle>
-                          </CardHeader>
-                          <CardContent className="pt-4">
-                            {typeof systemRequirements.additional === 'string' ? (
-                              <div className="prose max-w-none dark:prose-invert"
-                                dangerouslySetInnerHTML={{ __html: systemRequirements.additional }}>
-                              </div>
-                            ) : systemRequirements.windows?.additional ? (
-                              <div className="prose max-w-none dark:prose-invert">
-                                <p>{systemRequirements.windows.additional}</p>
-                              </div>
-                            ) : (
-                              <pre className="bg-muted p-4 rounded-md overflow-x-auto text-sm">
-                                {JSON.stringify(systemRequirements, null, 2)}
-                              </pre>
-                            )}
-                          </CardContent>
-                        </Card>
-                      )}
                     </div>
                   ) : (
                     <div className="text-center py-12">
@@ -784,56 +605,6 @@ export default function GameDetailPage() {
           </div>
         </div>
       </footer>
-
-      {/* Image Gallery Modal */}
-      <Dialog open={showImageGallery} onOpenChange={setShowImageGallery}>
-        <DialogContent className="max-w-5xl w-[90vw] h-[85vh] max-h-[90vh] p-0 overflow-hidden bg-black/95">
-          {/* Visually hidden title for screen readers */}
-          <DialogTitle className="absolute w-[1px] h-[1px] p-0 -m-[1px] overflow-hidden clip-0 whitespace-nowrap border-0">
-            {game.gameImages && game.gameImages[activeScreenshot]?.caption || `Screenshot ${activeScreenshot + 1} for ${game.title}`}
-          </DialogTitle>
-
-          <div className="relative h-full w-full overflow-hidden">
-            {game.gameImages && Array.isArray(game.gameImages) && game.gameImages.length > 0 && (
-              <Image
-                src={game.gameImages[activeScreenshot]?.url || "/placeholder.svg"}
-                alt={game.gameImages[activeScreenshot]?.caption || `Screenshot ${activeScreenshot + 1}`}
-                fill
-                className="object-contain"
-                sizes="90vw"
-              />
-            )}
-
-            <DialogClose className="absolute top-2 right-2 bg-black/40 hover:bg-black/60 p-2 rounded-full">
-              <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-4">
-                <path d="M11.7816 4.03157C12.0062 3.80702 12.0062 3.44295 11.7816 3.2184C11.5571 2.99385 11.193 2.99385 10.9685 3.2184L7.50005 6.68682L4.03164 3.2184C3.80708 2.99385 3.44301 2.99385 3.21846 3.2184C2.99391 3.44295 2.99391 3.80702 3.21846 4.03157L6.68688 7.49999L3.21846 10.9684C2.99391 11.193 2.99391 11.557 3.21846 11.7816C3.44301 12.0061 3.80708 12.0061 4.03164 11.7816L7.50005 8.31316L10.9685 11.7816C11.193 12.0061 11.5571 12.0061 11.7816 11.7816C12.0062 11.557 12.0062 11.193 11.7816 10.9684L8.31322 7.49999L11.7816 4.03157Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd"></path>
-              </svg>
-            </DialogClose>
-
-            {activeScreenshot > 0 && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute left-2 top-1/2 transform -translate-y-1/2 h-10 w-10 rounded-full bg-black/40 hover:bg-black/60"
-                onClick={() => setActiveScreenshot(prev => prev - 1)}
-              >
-                <ChevronLeft className="h-5 w-5" />
-              </Button>
-            )}
-
-            {game.gameImages && Array.isArray(game.gameImages) && activeScreenshot < game.gameImages.length - 1 && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 h-10 w-10 rounded-full bg-black/40 hover:bg-black/60"
-                onClick={() => setActiveScreenshot(prev => prev + 1)}
-              >
-                <ChevronLeft className="h-5 w-5 transform rotate-180" />
-              </Button>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 } 

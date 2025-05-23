@@ -1,6 +1,4 @@
-"use client"
-
-import { notFound, useParams } from "next/navigation"
+import { notFound } from "next/navigation"
 import Link from "next/link"
 import { 
   Card, 
@@ -32,50 +30,35 @@ import {
 } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { vi } from "date-fns/locale"
-import { createServerSupabaseClient, Article as ArticleType } from "@/lib/supabase-server"
+import { articlesDb, Article as ArticleType } from "@/lib/json-db"
 import { ArticleActions } from "@/components/news/article-actions"
 import { CommentSection } from "@/components/news/comment-section"
-import { useEffect, useState } from "react"
 
-// Define article interface
-interface Article {
-  id: string
-  title: string
-  excerpt: string
-  summary: string
-  content: string
-  author_name?: string | null
-  author_id?: string
-  created_at: string
-  published_at: string
-  category: string
-  tags: string[]
-  cover_image: string
-  views?: number
-  comments_count?: number
-  likes_count?: number
-  is_featured?: boolean
-  slug: string
-  status: string
-  author?: {
-    id?: string
-    full_name?: string | null
-    email?: string | null
-    avatar_url?: string | null
-  } | null
+interface PageProps {
+  params: Promise<{
+    slug: string
+    id: string
+  }>
 }
 
-export default function ArticlePage() {
-  // Get params with useParams hook
-  const params = useParams();
-  const slug = params.slug as string;
-  const id = params.id as string;
+export async function generateStaticParams() {
+  // Fetch all published articles to generate static paths
+  const { data: articles } = await articlesDb.select({
+    filter: (article: ArticleType) => article.status === 'published'
+  });
   
-  // State for data
-  const [article, setArticle] = useState<Article | null>(null);
-  const [relatedArticles, setRelatedArticles] = useState<Article[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  if (!articles || !Array.isArray(articles)) {
+    return []
+  }
+  
+  return articles.map((article: any) => ({
+    slug: article.slug,
+    id: article.id
+  }))
+}
+
+export default async function ArticlePage({ params }: PageProps) {
+  const { slug, id } = await params;
   
   // Function to format date with Vietnamese locale
   function formatDate(dateString: string) {
@@ -89,79 +72,36 @@ export default function ArticlePage() {
     }
   }
   
-  // Fetch data
-  useEffect(() => {
-    async function fetchData() {
-      if (!slug || !id) {
-        setError(true);
-        setLoading(false);
-        return;
-      }
-      
-      try {
-        // Create Supabase client
-        const supabase = createServerSupabaseClient();
-        
-        // Fetch article from Supabase based on slug and id
-        const { data: articleData, error: articleError } = await supabase
-          .from('articles')
-          .select(`
-            *,
-            author:author_id(id, full_name, email, avatar_url)
-          `)
-          .eq('id', id)
-          .single();
-          
-        // If article not found or error occurred, set error
-        if (articleError || !articleData) {
-          console.error('Error fetching article:', articleError);
-          setError(true);
-          setLoading(false);
-          return;
-        }
-        
-        setArticle(articleData);
-        
-        // Fetch related articles
-        const { data: relatedData = [] } = await supabase
-          .from('articles')
-          .select(`
-            *,
-            author:author_id(id, full_name, email, avatar_url)
-          `)
-          .eq('category', articleData.category || '')
-          .eq('status', 'published')
-          .neq('id', id)
-          .limit(3);
-        
-        setRelatedArticles(relatedData || []);
-        
-        // Increment view count
-        await supabase
-          .from('articles')
-          .update({ views: (articleData.views || 0) + 1 })
-          .eq('id', id);
-      } catch (e) {
-        console.error('Error in ArticlePage:', e);
-        setError(true);
-      } finally {
-        setLoading(false);
-      }
-    }
+  // Fetch article from JSON database
+  const { data: articleData, error: articleError } = await articlesDb.select({
+    eq: { field: 'id', value: id },
+    single: true
+  });
     
-    fetchData();
-  }, [slug, id]);
-  
-  if (loading) {
-    return <div className="container mx-auto py-8">Đang tải...</div>;
-  }
-  
-  if (error || !article) {
+  // If article not found or error occurred, show not found
+  if (articleError || !articleData) {
+    console.error('Error fetching article:', articleError);
     return notFound();
   }
   
-  const displayDate = article.published_at 
-    ? formatDate(article.published_at)
+  const article = articleData as ArticleType;
+  
+  // Fetch related articles
+  const { data: relatedData } = await articlesDb.select({
+    filter: (relatedArticle: ArticleType) => 
+      relatedArticle.category === (articleData as ArticleType).category && 
+      relatedArticle.status === 'published' && 
+      relatedArticle.id !== id,
+    limit: 3
+  });
+  
+  const relatedArticles = (relatedData as ArticleType[]) || [];
+  
+  // Increment view count
+  await articlesDb.incrementViews(id);
+  
+  const displayDate = article.publish_date 
+    ? formatDate(article.publish_date)
     : formatDate(article.created_at);
 
   return (
@@ -185,13 +125,13 @@ export default function ArticlePage() {
             <div className="flex items-center space-x-4 mb-6">
               <div className="flex items-center space-x-2">
                 <Avatar>
-                  <AvatarImage src={article.author?.avatar_url || undefined} alt={article.author?.full_name || article.author_name || 'Anonymous'} />
+                  <AvatarImage src={undefined} alt="Anonymous" />
                   <AvatarFallback>
-                    {article.author?.full_name?.[0] || article.author_name?.[0] || article.title?.[0] || 'U'}
+                    {article.title?.[0] || 'A'}
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <p className="font-medium text-sm">{article.author?.full_name || article.author_name || 'Anonymous'}</p>
+                  <p className="font-medium text-sm">Anonymous</p>
                   <p className="text-xs text-muted-foreground">{displayDate}</p>
                 </div>
               </div>
@@ -223,7 +163,7 @@ export default function ArticlePage() {
                 {article.summary}
               </div>
             )}
-            <div dangerouslySetInnerHTML={{ __html: article.content }} />
+            <div dangerouslySetInnerHTML={{ __html: article.content || '' }} />
           </div>
 
           {/* Tags */}
@@ -238,27 +178,25 @@ export default function ArticlePage() {
           )}
 
           {/* Action buttons */}
-          <ArticleActions articleId={article.id} initialLikes={article.likes_count || 0} />
+          <ArticleActions articleId={article.id} initialLikes={article.likes || 0} />
 
           {/* Author bio */}
-          {(article.author?.full_name || article.author_name) && (
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-start gap-4">
-                  <Avatar className="h-16 w-16">
-                    <AvatarImage src={article.author?.avatar_url || undefined} alt={article.author?.full_name || article.author_name || 'Anonymous'} />
-                    <AvatarFallback>
-                      {article.author?.full_name?.[0] || article.author_name?.[0] || article.title?.[0] || 'U'}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <h3 className="font-bold text-lg mb-1">Về tác giả {article.author?.full_name || article.author_name || 'Anonymous'}</h3>
-                    <p className="text-muted-foreground">Tác giả của bài viết này.</p>
-                  </div>
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-start gap-4">
+                <Avatar className="h-16 w-16">
+                  <AvatarImage src={undefined} alt="Anonymous" />
+                  <AvatarFallback>
+                    {article.title?.[0] || 'A'}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <h3 className="font-bold text-lg mb-1">Về tác giả Anonymous</h3>
+                  <p className="text-muted-foreground">Tác giả của bài viết này.</p>
                 </div>
-              </CardContent>
-            </Card>
-          )}
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Comments section */}
           <CommentSection articleId={article.id} />
@@ -294,7 +232,7 @@ export default function ArticlePage() {
                           </h4>
                           <div className="flex items-center mt-1">
                             <span className="text-xs text-muted-foreground">
-                              {relatedArticle.author?.full_name || relatedArticle.author_name || 'Anonymous'}
+                              Anonymous
                             </span>
                           </div>
                         </div>

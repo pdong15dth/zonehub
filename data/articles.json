@@ -1,0 +1,46 @@
+[
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "title": "Tin tức game mới nhất",
+    "slug": "tin-tuc-game-moi-nhat",
+    "summary": "Cập nhật những tin tức game hot nhất trong tuần",
+    "content": "Nội dung chi tiết về tin tức game...",
+    "cover_image": "https://placekitten.com/800/400",
+    "category": "Gaming",
+    "tags": [
+      "gaming",
+      "news",
+      "hot"
+    ],
+    "is_featured": true,
+    "publish_date": "2024-01-15T10:00:00Z",
+    "status": "published",
+    "created_at": "2024-01-15T10:00:00Z",
+    "updated_at": "2024-01-15T10:00:00Z",
+    "views": 150,
+    "comments_count": 5,
+    "likes": 25
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440001",
+    "title": "Review game AAA mới",
+    "slug": "review-game-aaa-moi",
+    "summary": "Đánh giá chi tiết game AAA vừa ra mắt",
+    "content": "Nội dung review chi tiết...",
+    "cover_image": "https://placekitten.com/800/401",
+    "category": "Review",
+    "tags": [
+      "review",
+      "aaa-game"
+    ],
+    "is_featured": false,
+    "publish_date": "2024-01-16T14:30:00Z",
+    "status": "published",
+    "created_at": "2024-01-16T14:30:00Z",
+    "updated_at": "2025-05-23T13:51:03.031Z",
+    "views": 91,
+    "comments_count": 3,
+    "likes": 12
+  }
+] }
+]

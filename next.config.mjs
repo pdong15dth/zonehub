@@ -1,27 +1,28 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'export',
   eslint: {
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: false,
   },
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
   images: {
-    unoptimized: false,
+    unoptimized: true,
     formats: ['image/avif', 'image/webp'],
     minimumCacheTTL: 60,
     remotePatterns: [
       {
         protocol: 'https',
         hostname: 'placekitten.com',
-      },
-      {
-        protocol: 'https',
-        hostname: '**',
+        port: '',
+        pathname: '/**',
       },
     ],
   },
-  trailingSlash: false,
+  trailingSlash: true,
+  skipTrailingSlashRedirect: true,
+  distDir: 'out',
   compress: true,
   poweredByHeader: false,
   reactStrictMode: false,
